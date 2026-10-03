@@ -22,6 +22,7 @@
 		<module>front-app</module>
 		<module>config-server</module>
 		<module>discovery-server</module>
+		<module>notifications-service</module>
 	</modules>
 
 	<properties>

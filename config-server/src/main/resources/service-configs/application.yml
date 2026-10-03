@@ -1,0 +1,10 @@
+#Общий файл конфигурации
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${DISCOVERY_SERVER_URI:http://localhost:8761/eureka/}
+
+logging:
+  level:
+    root: INFO
