@@ -1,0 +1,26 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: application-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: accounts-route
+          uri: lb://accounts-service
+          predicates:
+            - Path=/accounts/**
+          filters:
+            - RewritePath=/accounts/?(?<segment>.*), /$\{segment}
+        - id: cash-route
+          uri: lb://cash-service
+          predicates:
+            - Path=/cash/**
+          filters:
+            - RewritePath=/cash/?(?<segment>.*), /$\{segment}
+        - id: transfer-route
+          uri: lb://transfer-service
+          predicates:
+            - Path=/transfer/**
+          filters:
+            - RewritePath=/transfer/?(?<segment>.*), /$\{segment}
