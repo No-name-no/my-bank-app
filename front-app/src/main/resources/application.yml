@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: my-bank-front-app
+  config:
+    import: "optional:configserver:${CONFIG_SERVER_URI:http://localhost:8760}"
+  cloud:
+    config:
+      fail-fast: true
+      retry:
+        max-attempts: 10
+        initial-interval: 2000
+        multiplier: 1.5
+        max-interval: 10000

@@ -1,0 +1,22 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: my-bank-front-app
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: ${UI_CLIENT:bank-ui}
+            client-secret: ${UI_CLIENT_SECRET:ui-client-secret}
+            authorization-grant-type: authorization_code
+            scope: openid, profile, roles
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            provider: keycloak
+        provider:
+          keycloak:
+            issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/bank-realm}
+services:
+  gateway:
+    url: http://gateway-api

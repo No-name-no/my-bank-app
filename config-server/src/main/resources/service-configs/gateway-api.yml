@@ -1,8 +1,13 @@
 server:
-  port: 8080
+  port: 8081
 spring:
   application:
     name: application-gateway
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/bank-realm}
   cloud:
     gateway:
       routes:
@@ -12,15 +17,18 @@ spring:
             - Path=/accounts/**
           filters:
             - RewritePath=/accounts/?(?<segment>.*), /$\{segment}
+            - TokenRelay=
         - id: cash-route
           uri: lb://cash-service
           predicates:
             - Path=/cash/**
           filters:
             - RewritePath=/cash/?(?<segment>.*), /$\{segment}
+            - TokenRelay=
         - id: transfer-route
           uri: lb://transfer-service
           predicates:
             - Path=/transfer/**
           filters:
             - RewritePath=/transfer/?(?<segment>.*), /$\{segment}
+            - TokenRelay=
