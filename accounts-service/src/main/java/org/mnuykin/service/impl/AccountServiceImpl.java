@@ -19,14 +19,14 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 @Slf4j
 public class AccountServiceImpl implements AccountService {
-    private AccountRepository accountRepository;
-    private AccountMapper accountMapper;
+    private final AccountRepository accountRepository;
+    private final AccountMapper accountMapper;
 
     @Override
     public Mono<AccountDto> getByLogin(String login) {
         return accountRepository.findByLogin(login)
                 .switchIfEmpty(Mono.error(new AccountNotFoundException("Аккаунт не найден: " + login)))
-                .map(account -> accountMapper.toDto(account));
+                .map(accountMapper::toDto);
     }
 
     @Override
@@ -39,12 +39,12 @@ public class AccountServiceImpl implements AccountService {
                     account.setLastName(updateRq.getLastName());
                     account.setBirthDate(updateRq.getBirthday());
                     return accountRepository.save(account);
-                }).map(account -> accountMapper.toDto(account));
+                }).map(accountMapper::toDto);
     }
 
     @Override
     public Flux<AccountShortDto> getOtherAccounts(String login) {
-        return accountRepository.findAllByLoginNot(login).map(account -> accountMapper.toShortDto(account));
+        return accountRepository.findAllByLoginNot(login).map(accountMapper::toShortDto);
     }
 
     @Override

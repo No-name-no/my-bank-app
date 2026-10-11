@@ -1,0 +1,310 @@
+{
+  "realm": "bank-realm",
+  "enabled": true,
+  "displayName": "My Bank App",
+  "displayNameHtml": "<strong>Bank</strong>",
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": false,
+  "editUsernameAllowed": false,
+  "registrationAllowed": false,
+  "rememberMe": false,
+  "verifyEmail": false,
+  "bruteForceProtected": true,
+  "sslRequired": "external",
+
+  "roles": {
+    "realm": [
+      {
+        "name": "USER",
+        "description": "Обычный пользователь банка (клиент)"
+      },
+      {
+        "name": "SERVICE",
+        "description": "Сервисный аккаунт для межсервисного взаимодействия"
+      }
+    ],
+    "client": {
+      "accounts-service": [
+        {
+          "name": "ACCOUNTS_WRITE",
+          "description": "Изменение данных аккаунта и баланса в accounts-service"
+        }
+      ],
+      "cash-service": [
+        {
+          "name": "CASH_WRITE",
+          "description": "Пополнение и снятие денег через cash-service"
+        }
+      ],
+      "transfer-service": [
+        {
+          "name": "TRANSFER_WRITE",
+          "description": "Переводы между счетами через transfer-service"
+        }
+      ],
+      "notifications-service": [
+        {
+          "name": "NOTIFICATIONS_WRITE",
+          "description": "Отправка уведомлений через notifications-service"
+        }
+      ]
+    }
+  },
+
+  "clients": [
+    {
+      "clientId": "front-ui",
+      "name": "Front UI",
+      "description": "Public client for the bank web UI (Authorization Code Flow + PKCE)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "consentRequired": false,
+      "redirectUris": [
+        "http://localhost:8080/*",
+        "http://localhost:8080/login/oauth2/code/*"
+      ],
+      "webOrigins": [
+        "http://localhost:8080",
+        "+"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:8080/*"
+      },
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "clientId": "gateway",
+      "name": "Gateway API",
+      "description": "Gateway API — only validates and relays user JWT",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "bearerOnly": true,
+      "secret": "gateway-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    },
+    {
+      "clientId": "accounts-service",
+      "name": "Accounts Service",
+      "description": "Сервис аккаунтов",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "accounts-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "use.refresh.tokens": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "accounts-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "accounts-service",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "cash-service",
+      "name": "Cash Service",
+      "description": "Сервис обналичивания денег",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "cash-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "use.refresh.tokens": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "cash-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "cash-service",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "transfer-service",
+      "name": "Transfer Service",
+      "description": "Сервис переводов между счетами",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "transfer-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "use.refresh.tokens": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "transfer-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "transfer-service",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "notifications-service",
+      "name": "Notifications Service",
+      "description": "Сервис уведомлений",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "notifications-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "attributes": {
+        "use.refresh.tokens": "false"
+      },
+      "protocolMappers": [
+        {
+          "name": "notifications-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "notifications-service",
+            "id.token.claim": "false",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+
+  "users": [
+    {
+      "username": "login1",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Федя",
+      "lastName": "Сумкин",
+      "email": "login1@bank.local",
+      "credentials": [
+        { "type": "password", "value": "password", "temporary": false }
+      ],
+      "requiredActions": [],
+      "realmRoles": ["USER"],
+      "clientRoles": {
+        "accounts-service":   ["ACCOUNTS_WRITE"],
+        "cash-service":       ["CASH_WRITE"],
+        "transfer-service":   ["TRANSFER_WRITE"]
+      }
+    },
+    {
+      "username": "login2",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Пётр",
+      "lastName": "Петров",
+      "email": "login2@bank.local",
+      "credentials": [
+        { "type": "password", "value": "password", "temporary": false }
+      ],
+      "requiredActions": [],
+      "realmRoles": ["USER"],
+      "clientRoles": {
+        "accounts-service":   ["ACCOUNTS_WRITE"],
+        "cash-service":       ["CASH_WRITE"],
+        "transfer-service":   ["TRANSFER_WRITE"]
+      }
+    },
+    {
+      "username": "login3",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Дмитрий",
+      "lastName": "Петров",
+      "email": "login3@bank.local",
+      "credentials": [
+        { "type": "password", "value": "password", "temporary": false }
+      ],
+      "requiredActions": [],
+      "realmRoles": ["USER"],
+      "clientRoles": {
+        "accounts-service":   ["ACCOUNTS_WRITE"],
+        "cash-service":       ["CASH_WRITE"],
+        "transfer-service":   ["TRANSFER_WRITE"]
+      }
+    },
+
+    {
+      "username": "service-account-accounts-service",
+      "enabled": true,
+      "serviceAccountClientId": "accounts-service",
+      "clientRoles": {
+        "notifications-service": ["NOTIFICATIONS_WRITE"]
+      }
+    },
+    {
+      "username": "service-account-cash-service",
+      "enabled": true,
+      "serviceAccountClientId": "cash-service",
+      "clientRoles": {
+        "accounts-service":      ["ACCOUNTS_WRITE"],
+        "notifications-service": ["NOTIFICATIONS_WRITE"]
+      }
+    },
+    {
+      "username": "service-account-transfer-service",
+      "enabled": true,
+      "serviceAccountClientId": "transfer-service",
+      "clientRoles": {
+        "accounts-service":      ["ACCOUNTS_WRITE"],
+        "notifications-service": ["NOTIFICATIONS_WRITE"]
+      }
+    }
+  ]
+}
