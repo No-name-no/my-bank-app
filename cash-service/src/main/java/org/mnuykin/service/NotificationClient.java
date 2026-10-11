@@ -1,4 +1,4 @@
-package org.mnuykin.client;
+package org.mnuykin.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.mnuykin.dto.NotificationsRq;
@@ -23,12 +23,12 @@ public class NotificationClient {
         this.webClient = webClient;
     }
 
-    public Mono<Void> send(NotificationsRq request) {
+    public Mono<Void> send(NotificationsRq rq) {
         return webClient.post()
                 .uri("/notifications")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
-                .bodyValue(request)
+                .bodyValue(rq)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, resp ->
                         resp.bodyToMono(String.class)
@@ -39,7 +39,7 @@ public class NotificationClient {
                 .timeout(TIMEOUT)
                 .doOnError(e -> log.warn(
                         "Уведомление не отправлено (login={}, subject={}): {}",
-                        request.login(), request.subject(), e.getMessage()))
+                        rq.getLogin(), rq.getSubject(), e.getMessage()))
                 .onErrorResume(e -> Mono.empty());
     }
 }
