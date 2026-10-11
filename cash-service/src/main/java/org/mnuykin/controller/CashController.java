@@ -2,33 +2,31 @@ package org.mnuykin.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.mnuykin.dto.AmountRequest;
-import org.mnuykin.dto.CashResponse;
+import lombok.extern.slf4j.Slf4j;
+import org.mnuykin.dto.AmountRq;
+import org.mnuykin.dto.CashRs;
 import org.mnuykin.service.CashService;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 @RestController
-@RequestMapping("/cash")
+@Slf4j
 @RequiredArgsConstructor
+@RequestMapping("/cash")
 public class CashController {
+
     private final CashService cashService;
 
     @PostMapping("/deposit")
-    public Mono<CashResponse> deposit(@AuthenticationPrincipal Jwt jwt,
-                                      @Valid @RequestBody AmountRequest request) {
-        return cashService.deposit(loginFrom(jwt), request.amount());
+    public Mono<CashRs> deposit(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody AmountRq rq) {
+        return cashService.deposit(loginFrom(jwt), rq.getAmount());
     }
 
     @PostMapping("/withdraw")
-    public Mono<CashResponse> withdraw(@AuthenticationPrincipal Jwt jwt,
-                                       @Valid @RequestBody AmountRequest request) {
-        return cashService.withdraw(loginFrom(jwt), request.amount());
+    public Mono<CashRs> withdraw(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody AmountRq rq) {
+        return cashService.withdraw(loginFrom(jwt), rq.getAmount());
     }
 
     private String loginFrom(Jwt jwt) {

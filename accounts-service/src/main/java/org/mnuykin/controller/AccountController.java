@@ -7,6 +7,7 @@ import org.mnuykin.dto.AccountDto;
 import org.mnuykin.dto.AccountShortDto;
 import org.mnuykin.dto.AccountUpdateRq;
 import org.mnuykin.service.AccountService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -22,16 +23,19 @@ public class AccountController {
     private final AccountService accountService;
 
     @GetMapping("/me")
+    @PreAuthorize("hasRole('USER') and hasAuthority('accounts-service_ACCOUNTS_WRITE')")
     public Mono<AccountDto> me(@AuthenticationPrincipal Jwt jwt){
         return accountService.getByLogin(loginFrom(jwt));
     }
 
     @PutMapping("/me")
+    @PreAuthorize("hasRole('USER') and hasAuthority('accounts-service_ACCOUNTS_WRITE')")
     public Mono<AccountDto> updateMe(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody AccountUpdateRq updateRq){
         return accountService.updateByLogin(loginFrom(jwt), updateRq);
     }
 
     @GetMapping
+    @PreAuthorize("hasRole('USER') and hasAuthority('accounts-service_ACCOUNTS_WRITE')")
     public Flux<AccountShortDto> changeAccount(@AuthenticationPrincipal Jwt jwt){
         return accountService.getOtherAccounts(loginFrom(jwt));
     }

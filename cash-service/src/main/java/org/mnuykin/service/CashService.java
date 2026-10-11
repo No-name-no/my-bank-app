@@ -1,11 +1,11 @@
 package org.mnuykin.service;
 
-import org.mnuykin.dto.CashResponse;
+import org.mnuykin.dto.CashRs;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 
 public interface CashService {
-    Mono<CashResponse> deposit(String login, BigDecimal amount);
-    Mono<CashResponse> withdraw(String login, BigDecimal amount);
+    Mono<CashRs> deposit(String login, BigDecimal amount);
+    Mono<CashRs> withdraw(String login, BigDecimal amount);
 }

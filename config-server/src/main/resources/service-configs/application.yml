@@ -7,4 +7,5 @@ eureka:
 
 logging:
   level:
-    root: INFO
+    org.mnuykin: DEBUG
+    org.springframework.security.oauth2.client: INFO

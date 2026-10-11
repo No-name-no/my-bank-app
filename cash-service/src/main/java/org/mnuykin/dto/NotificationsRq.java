@@ -1,10 +1,18 @@
 package org.mnuykin.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-public record NotificationsRq(
-        @NotBlank String login,
-        @NotBlank String subject,
-        @NotBlank String message
-) {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class NotificationsRq {
+    @NotBlank
+    private String login;
+    @NotBlank
+    private String subject;
+    @NotBlank
+    private String message;
 }

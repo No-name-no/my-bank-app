@@ -25,6 +25,12 @@ public class GlobalExceptionHandler {
         return Mono.just(Map.of("error", e.getMessage()));
     }
 
+    @ExceptionHandler(DownstreamServiceException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    public Mono<Map<String, String>> downstream(DownstreamServiceException e) {
+        return Mono.just(Map.of("error", e.getMessage()));
+    }
+
     @ExceptionHandler(WebExchangeBindException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Mono<Map<String, String>> validation(WebExchangeBindException e) {

@@ -1,7 +1,14 @@
 package org.mnuykin.dto;
 
-public record AccountShortDto(
-        String login,
-        String firstName,
-        String lastName
-) {}
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class AccountShortDto {
+    private String login;
+    private String firstName;
+    private String lastName;
+}

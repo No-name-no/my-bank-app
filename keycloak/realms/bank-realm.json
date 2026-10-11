@@ -284,6 +284,7 @@
       "username": "service-account-accounts-service",
       "enabled": true,
       "serviceAccountClientId": "accounts-service",
+      "realmRoles": ["SERVICE"],
       "clientRoles": {
         "notifications-service": ["NOTIFICATIONS_WRITE"]
       }
@@ -292,6 +293,7 @@
       "username": "service-account-cash-service",
       "enabled": true,
       "serviceAccountClientId": "cash-service",
+      "realmRoles": ["SERVICE"],
       "clientRoles": {
         "accounts-service":      ["ACCOUNTS_WRITE"],
         "notifications-service": ["NOTIFICATIONS_WRITE"]
@@ -301,6 +303,7 @@
       "username": "service-account-transfer-service",
       "enabled": true,
       "serviceAccountClientId": "transfer-service",
+      "realmRoles": ["SERVICE"],
       "clientRoles": {
         "accounts-service":      ["ACCOUNTS_WRITE"],
         "notifications-service": ["NOTIFICATIONS_WRITE"]

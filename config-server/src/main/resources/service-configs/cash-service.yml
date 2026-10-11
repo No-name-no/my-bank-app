@@ -1,2 +1,36 @@
 server:
   port: 8083
+
+spring:
+  application:
+    name: cash-service
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/bank-realm}
+      client:
+        provider:
+          keycloak:
+            issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/bank-realm}
+        registration:
+          accounts:
+            provider: keycloak
+            client-id: cash-service
+            client-secret: ${CASH_CLIENT_SECRET:cash-secret}
+            authorization-grant-type: client_credentials
+          notifications:
+            provider: keycloak
+            client-id: cash-service
+            client-secret: ${CASH_CLIENT_SECRET:cash-secret}
+            authorization-grant-type: client_credentials
+
+bank:
+  accounts-service:
+    base-url: http://accounts-service
+  notifications-service:
+    base-url: http://notifications-service
+  oauth2:
+    registration:
+      accounts: accounts
+      notifications: notifications
