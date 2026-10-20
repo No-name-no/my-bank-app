@@ -50,7 +50,6 @@ public class ApiGatewayConfig {
     }
 
     @Bean
-
     public RestClient gatewayRestClient(
             @LoadBalanced RestClient.Builder builder,
             OAuth2AuthorizedClientManager manager,

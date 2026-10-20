@@ -12,3 +12,4 @@ logging:
     org.mnuykin: DEBUG
     org.springframework.security.oauth2.client: INFO
     org.springframework.security.oauth2: INFO
+    reactor.netty.http.client: DEBUG

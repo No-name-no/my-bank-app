@@ -13,7 +13,7 @@ import reactor.core.publisher.Mono;
 @RestController
 @Slf4j
 @RequiredArgsConstructor
-@RequestMapping("/accounts/internal")
+@RequestMapping("/internal/accounts")
 public class InternalAccountController {
 
     private final AccountService accountService;
@@ -21,12 +21,14 @@ public class InternalAccountController {
     @PostMapping("/transaction")
     @PreAuthorize("hasRole('SERVICE') and hasAuthority('accounts-service_ACCOUNTS_WRITE')")
     public Mono<Void> transaction(@Valid @RequestBody TransactionRq transactionRq){
+        log.info("Transaction request: {}", transactionRq.toString());
         return accountService.execTran(transactionRq);
     }
 
     @GetMapping("/{login}")
     @PreAuthorize("hasRole('SERVICE') and hasAuthority('accounts-service_ACCOUNTS_WRITE')")
     public Mono<AccountDto> getByLogin(@PathVariable String login) {
+        log.info("Get account: login={}", login);
         return accountService.getByLogin(login);
     }
 }

@@ -12,6 +12,9 @@ spring:
     gateway:
       server:
         webflux:
+          httpclient:
+            pool:
+              max-idle-time: 5s # Должно быть меньше, чем connectionTimeout на Tomcat
           routes:
             - id: accounts-route
               uri: lb://accounts-service
@@ -35,5 +38,6 @@ spring:
 logging:
   level:
     org.springframework.cloud.gateway: TRACE
+    reactor.netty: DEBUG
     reactor.netty.http.client: DEBUG
     reactor.netty.http.server: DEBUG

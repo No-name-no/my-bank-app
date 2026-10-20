@@ -197,7 +197,7 @@ public class MainController {
         if (parts.length < 2) {
             return new String[]{parts[0], ""};
         }
-        return new String[]{parts[1], parts[0]};
+        return new String[]{parts[0], parts[1]};
     }
 
     private static String extractError(RestClientException e) {
