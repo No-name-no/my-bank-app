@@ -1,10 +1,12 @@
 package ru.yandex.practicum.mybankfront.config;
 
-import org.apache.http.HttpHeaders;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Scope;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
@@ -35,16 +37,29 @@ public class ApiGatewayConfig {
     }
 
     @Bean
-    @LoadBalanced
-    public RestClient gatewayRestClient(OAuth2AuthorizedClientManager manager,
-                                        @Value("${services.gateway.url}") String baseUrl) {
+    @Primary
+    public RestClient.Builder regularRestClientBuilder() {
+        return RestClient.builder();
+    }
 
-        // Этот интерцептор берёт access_token ТЕКУЩЕГО пользователя из сессии
-        // и добавляет заголовок Authorization: Bearer <JWT>
+    @Bean
+    @LoadBalanced
+    @Scope("prototype")
+    public RestClient.Builder loadBalancedRestClientBuilder() {
+        return RestClient.builder();
+    }
+
+    @Bean
+
+    public RestClient gatewayRestClient(
+            @LoadBalanced RestClient.Builder builder,
+            OAuth2AuthorizedClientManager manager,
+            @Value("${services.gateway.url}") String baseUrl) {
+
         var oauth2Interceptor = new OAuth2ClientHttpRequestInterceptor(manager);
         oauth2Interceptor.setClientRegistrationIdResolver(req -> "keycloak");
 
-        return RestClient.builder()
+        return builder.clone()
                 .baseUrl(baseUrl)
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
                 .requestInterceptor(oauth2Interceptor)

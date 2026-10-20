@@ -2,23 +2,12 @@ server:
   port: 8081
 spring:
   application:
-    name: application-gateway
+    name: gateway-api
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/bank-realm}
-      client:
-        provider:
-          keycloak:
-            issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/bank-realm}
-        registration:
-          gateway:
-            provider: keycloak
-            client-id: gateway
-            client-secret: ${GATEWAY_CLIENT_SECRET:gateway-secret}
-            authorization-grant-type: client_credentials
-            scope: openid
 
   cloud:
     gateway:
@@ -28,19 +17,16 @@ spring:
           predicates:
             - Path=/accounts/**
           filters:
-            - RewritePath=/accounts/?(?<segment>.*), /$\{segment}
-            - TokenRelay=
+            - BearerTokenRelay
         - id: cash-route
           uri: lb://cash-service
           predicates:
             - Path=/cash/**
           filters:
-            - RewritePath=/cash/?(?<segment>.*), /$\{segment}
-            - TokenRelay=
+            - BearerTokenRelay
         - id: transfer-route
           uri: lb://transfer-service
           predicates:
             - Path=/transfer/**
           filters:
-            - RewritePath=/transfer/?(?<segment>.*), /$\{segment}
-            - TokenRelay=
+            - BearerTokenRelay

@@ -1,15 +1,26 @@
 package ru.yandex.practicum.mybankfront.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
+import ru.yandex.practicum.mybankfront.controller.dto.AccountDto;
+import ru.yandex.practicum.mybankfront.controller.dto.AccountShortView;
+import ru.yandex.practicum.mybankfront.controller.dto.AccountUpdateRq;
 import ru.yandex.practicum.mybankfront.controller.dto.CashAction;
-import ru.yandex.practicum.mybankfront.controller.stub.AccountStub;
+import ru.yandex.practicum.mybankfront.service.AccountsClient;
+import ru.yandex.practicum.mybankfront.service.CashClient;
+import ru.yandex.practicum.mybankfront.service.TransferClient;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Контроллер main.html.
@@ -33,10 +44,16 @@ import java.time.LocalDate;
  * С примерами использования можно ознакомиться в тестовом классе заглушке AccountStub
  */
 @Controller
+@Slf4j
+@RequiredArgsConstructor
 public class MainController {
-    // TODO: Удалить заглушку, так как используется только для ознакомительных целей
-    @Autowired
-    private AccountStub accountStub;
+
+    private static final Pattern ERROR_PATTERN =
+            Pattern.compile("\"error\"\\s*:\\s*\"([^\"]+)\"");
+
+    private final AccountsClient accountsClient;
+    private final CashClient cashClient;
+    private final TransferClient transferClient;
 
     /**
      * GET /.
@@ -56,8 +73,7 @@ public class MainController {
      */
     @GetMapping("/account")
     public String getAccount(Model model) {
-        // TODO: Заменить на то, что описано в комментарии к методу
-        accountStub.fillModel(model, null, null);
+        loadModel(model);
 
         return "main";
     }
@@ -79,9 +95,17 @@ public class MainController {
             @RequestParam("name") String name,
             @RequestParam("birthdate") LocalDate birthdate
     ) {
-        // TODO: Заменить на то, что описано в комментарии к методу
-        accountStub.setNameAndBirthdate(name, birthdate);
-        accountStub.fillModel(model, null, null);
+        String[] firstLast = parseFirstLastName(name);
+        AccountUpdateRq rq = new AccountUpdateRq(firstLast[0], firstLast[1], birthdate);
+
+        try {
+            accountsClient.updateMe(rq);
+            model.addAttribute("info", "Данные сохранены");
+        } catch (RestClientException e) {
+            model.addAttribute("errors", List.of(extractError(e)));
+        }
+
+        loadModel(model);
 
         return "main";
     }
@@ -103,9 +127,21 @@ public class MainController {
             @RequestParam("value") int value,
             @RequestParam("action") CashAction action
             ) {
-        // TODO: Заменить на то, что описано в комментарии к методу
-        accountStub.editCash(model, value, action);
+        BigDecimal amount = BigDecimal.valueOf(value);
+        try {
+            switch (action) {
+                case PUT -> cashClient.deposit(amount);
+                case GET -> cashClient.withdraw(amount);
+            }
+            model.addAttribute("info", switch (action) {
+                case PUT -> "Счёт пополнен на " + value + " руб.";
+                case GET -> "Со счёта снято " + value + " руб.";
+            });
+        } catch (RestClientException e) {
+            model.addAttribute("errors", List.of(extractError(e)));
+        }
 
+        loadModel(model);
         return "main";
     }
 
@@ -126,9 +162,54 @@ public class MainController {
             @RequestParam("value") int value,
             @RequestParam("login") String login
     ) {
-        // TODO: Заменить на то, что описано в комментарии к методу
-        accountStub.transfer(model, value, login);
+        BigDecimal amount = BigDecimal.valueOf(value);
+        try {
+            transferClient.transfer(login, amount);
+            model.addAttribute("info",
+                    "Перевод " + value + " руб. на счёт " + login + " выполнен");
+        } catch (RestClientException e) {
+            model.addAttribute("errors", List.of(extractError(e)));
+        }
+
+        loadModel(model);
 
         return "main";
     }
+
+    private void loadModel(Model model) {
+        AccountDto me = accountsClient.getMe();
+        List<AccountShortView> others = accountsClient.getOthers().stream()
+                .map(b -> new AccountShortView(
+                        b.getLogin(),
+                        b.getFirstName() + " " + b.getLastName()))
+                .toList();
+
+        model.addAttribute("name", me.getFirstName() + " " + me.getLastName());
+        model.addAttribute("birthdate", me.getBirthDate() != null
+                ? me.getBirthDate().toString() : "");
+        model.addAttribute("sum", me.getBalance() != null
+                ? me.getBalance().intValue() : 0);
+        model.addAttribute("accounts", others);
+    }
+
+    private static String[] parseFirstLastName(String name) {
+        String[] parts = name.trim().split("\\s+", 2);
+        if (parts.length < 2) {
+            return new String[]{parts[0], ""};
+        }
+        return new String[]{parts[1], parts[0]};
+    }
+
+    private static String extractError(RestClientException e) {
+        if (e instanceof RestClientResponseException re) {
+            String body = re.getResponseBodyAsString();
+            var m = ERROR_PATTERN.matcher(body);
+            if (m.find()) {
+                return m.group(1);
+            }
+            return "HTTP " + re.getStatusCode().value() + ": " + re.getStatusText();
+        }
+        return "Сервис временно недоступен";
+    }
+
 }
