@@ -8,25 +8,32 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/bank-realm}
-
   cloud:
     gateway:
-      routes:
-        - id: accounts-route
-          uri: lb://accounts-service
-          predicates:
-            - Path=/accounts/**
-          filters:
-            - BearerTokenRelay
-        - id: cash-route
-          uri: lb://cash-service
-          predicates:
-            - Path=/cash/**
-          filters:
-            - BearerTokenRelay
-        - id: transfer-route
-          uri: lb://transfer-service
-          predicates:
-            - Path=/transfer/**
-          filters:
-            - BearerTokenRelay
+      server:
+        webflux:
+          routes:
+            - id: accounts-route
+              uri: lb://accounts-service
+              predicates:
+                - Path=/accounts/**
+              filters:
+                - BearerTokenRelay
+            - id: cash-route
+              uri: lb://cash-service
+              predicates:
+                - Path=/cash/**
+              filters:
+                - BearerTokenRelay
+            - id: transfer-route
+              uri: lb://transfer-service
+              predicates:
+                - Path=/transfer/**
+              filters:
+                - BearerTokenRelay
+
+logging:
+  level:
+    org.springframework.cloud.gateway: TRACE
+    reactor.netty.http.client: DEBUG
+    reactor.netty.http.server: DEBUG

@@ -9,4 +9,4 @@ CREATE TABLE IF NOT EXISTS accounts.accounts (
     balance      NUMERIC(19, 2) NOT NULL DEFAULT 0 CHECK (balance >= 0)
 );
 
-CREATE INDEX idx_accounts_login ON accounts(login);
+CREATE INDEX IF NOT EXISTS idx_accounts_login ON accounts(login);

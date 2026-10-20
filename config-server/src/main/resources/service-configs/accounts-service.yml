@@ -1,3 +1,43 @@
 server:
   port: 8082
 
+spring:
+  application:
+    name: accounts-service
+
+  r2dbc:
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:8091}/${DB_NAME:bank}?currentSchema=accounts
+    username: ${DB_USERNAME:bank}
+    password: ${DB_PASSWORD:bank}
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+      max-idle-time: 30m
+      validation-query: SELECT 1
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+      data-locations: classpath:import.sql
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/bank-realm}
+      client:
+        provider:
+          keycloak:
+            issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/bank-realm}
+        registration:
+          notifications:
+            provider: keycloak
+            client-id: accounts-service
+            client-secret: ${ACCOUNTS_CLIENT_SECRET:accounts-secret}
+            authorization-grant-type: client_credentials
+
+logging:
+  level:
+    org.springframework.r2dbc.postgresql.QUERY: DEBUG
+    org.springframework.r2dbc.postgresql.PARAM: DEBUG
