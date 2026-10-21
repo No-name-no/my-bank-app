@@ -1,6 +1,18 @@
 # my-bank-app - микросервисное приложение
 Учебный проект: микросервисный «Банк» на Spring Boot/Java 21 со Spring Cloud, OAuth 2.0 (Keycloak), WebFlux и PostgreSQL.
 
+| Компонент | Роль |
+|-----------|------|
+| **config-server** | Spring Cloud Config — внешние конфигурации |
+| **directory-server** | Eureka — Service Discovery |
+| **gateway-api** | Spring Cloud Gateway — единая точка входа|
+| **front-app** | Thymeleaf-фронт на Spring Web MVC, ходит в Gateway как OAuth2 Client (Authorization Code Flow) |
+| **accounts-service** | Реактивный сервис аккаунтов и балансов (WebFlux + R2DBC + PostgreSQL) |
+| **cash-service** | Пополнение и снятие, делегирует операции в accounts |
+| **transfer-service** | Переводы между счетами, делегирует операции в accounts |
+| **notifications-service** | Приём и запись уведомлений в лог |
+| **keycloak** | OAuth 2.0 / OIDC — realm `bank` |
+
 ## Порты
 | Порт  | Приложение            |
 |-------|-----------------------|
@@ -16,6 +28,35 @@
 | 8091  | PostgreSQL            |
 
 ---
+
+## Запуск
+
+### Требования
+
+- Java 21
+- Maven
+- Docker + Docker Compose
+- Импортированный realm `bank` в Keycloak
+
+###  Docker Compose
+
+```bash
+docker compose up --build
+```
+
+После старта:
+
+- Front: http://localhost:8080 (`login1/password`)
+- Keycloak Admin: http://localhost:8090 (`admin/admin`)
+- Eureka: http://localhost:8761
+- Gateway: http://localhost:8081
+
+Остановить:
+
+```bash
+docker compose down          # сохранить данные
+docker compose down -v       # удалить volume с БД
+```
 
 ## Архитектура
 ![img.png](img.png)

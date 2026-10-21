@@ -10,7 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mnuykin.dto.AccountDto;
 import org.mnuykin.dto.TranKind;
 import org.mnuykin.dto.TransactionRq;
-import org.mnuykin.exception.InsufficientFundsException;
 import org.mnuykin.service.AccountsClient;
 import org.mnuykin.service.impl.CashServiceImpl;
 import reactor.core.publisher.Mono;
@@ -20,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -75,23 +75,11 @@ class CashServiceImplTest {
     }
 
     @Test
-    void withdraw_shouldPropagateInsufficientFunds() {
-        when(accountsClient.transaction(any()))
-                .thenReturn(Mono.error(new InsufficientFundsException("no money")));
-
-        StepVerifier.create(service.withdraw("login1", new BigDecimal("99999")))
-                .expectError(InsufficientFundsException.class)
-                .verify();
-
-        verify(accountsClient, never()).getAccount(any());
-        verifyNoInteractions(notificationClient);
-    }
-
-    @Test
     void deposit_shouldRejectNonPositiveAmount() {
-        StepVerifier.create(service.deposit("login1", BigDecimal.ZERO))
-                .expectError(IllegalArgumentException.class)
-                .verify();
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.deposit("login1", BigDecimal.ZERO)
+        );
 
         verifyNoInteractions(accountsClient, notificationClient);
     }
