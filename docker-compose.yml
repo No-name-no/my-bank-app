@@ -6,18 +6,22 @@ services:
     container_name: bank-keycloak
     command:
       - start-dev
-      - --http-port=8080
+      - --http-port=8090
       - --import-realm
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: "8090"
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HEALTH_ENABLED: "true"
     ports:
-      - "8090:8080"
+      - "8090:8090"
     volumes:
      - ./keycloak/realms:/opt/keycloak/data/import
     healthcheck:
-      test: ["CMD", "exec", "3<>/dev/tcp/localhost/8080", "&&", "echo", "-e", "GET /health/ready HTTP/1.1\r\nHost: localhost\r\n\r\n", ">&3", "&&", "grep", "-q", "200 OK", "<&3"]
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8090 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r' >&3 && cat <&3 | grep -q '200 OK'"]
       interval: 10s
       timeout: 5s
       retries: 3
@@ -49,13 +53,14 @@ services:
     ports:
       - "8760:8760"
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO - http://localhost:8760/actuator/health | grep -q '\"status\":\"UP\"'" ]
+      test: ["CMD-SHELL", "wget -qO - http://localhost:8760/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 10s
       timeout: 3s
       retries: 30
       start_period: 45s
     networks:
       - bank-network
+
   eureka:
     build:
       context: ./discovery-server
@@ -64,7 +69,7 @@ services:
     ports:
       - "8761:8761"
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO - http://localhost:8761/actuator/health | grep -q '\"status\":\"UP\"'" ]
+      test: ["CMD-SHELL", "wget -qO - http://localhost:8761/actuator/health | grep -q '\"status\":\"UP\"'"]
       interval: 10s
       timeout: 3s
       retries: 20
@@ -81,7 +86,12 @@ services:
     environment:
       CONFIG_SERVER_URI: http://config-server:8760
       DISCOVERY_SERVER_URI: http://eureka:8761/eureka/
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/bank-realm
+      # Issuer — публичный адрес (совпадает с iss в токене)
+      KEYCLOAK_ISSUER_URI: http://localhost:8090/realms/bank-realm
+      # JWKS — внутренний адрес для получения ключей подписи
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/certs
+      # Token endpoint — внутренний адрес (если сервис сам запрашивает токены)
+      KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/token
     depends_on:
       keycloak:
         condition: service_healthy
@@ -101,7 +111,10 @@ services:
     environment:
       CONFIG_SERVER_URI: http://config-server:8760
       DISCOVERY_SERVER_URI: http://eureka:8761/eureka/
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/bank-realm
+      KEYCLOAK_ISSUER_URI: http://localhost:8090/realms/bank-realm
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/certs
+      KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/token
+      TRANSFER_CLIENT_SECRET: transfer-secret
     depends_on:
       keycloak:
         condition: service_healthy
@@ -121,7 +134,10 @@ services:
     environment:
       CONFIG_SERVER_URI: http://config-server:8760
       DISCOVERY_SERVER_URI: http://eureka:8761/eureka/
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/bank-realm
+      KEYCLOAK_ISSUER_URI: http://localhost:8090/realms/bank-realm
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/certs
+      KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/token
+      CASH_CLIENT_SECRET: cash-secret
     depends_on:
       keycloak:
         condition: service_healthy
@@ -141,7 +157,10 @@ services:
     environment:
       CONFIG_SERVER_URI: http://config-server:8760
       DISCOVERY_SERVER_URI: http://eureka:8761/eureka/
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/bank-realm
+      KEYCLOAK_ISSUER_URI: http://localhost:8090/realms/bank-realm
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/certs
+      KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/token
+      ACCOUNTS_CLIENT_SECRET: accounts-secret
       DB_HOST: postgres
       DB_PORT: 5432
     depends_on:
@@ -165,7 +184,8 @@ services:
     environment:
       CONFIG_SERVER_URI: http://config-server:8760
       DISCOVERY_SERVER_URI: http://eureka:8761/eureka/
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/bank-realm
+      KEYCLOAK_ISSUER_URI: http://localhost:8090/realms/bank-realm
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/certs
     depends_on:
       keycloak:
         condition: service_healthy
@@ -185,7 +205,15 @@ services:
     environment:
       CONFIG_SERVER_URI: http://config-server:8760
       DISCOVERY_SERVER_URI: http://eureka:8761/eureka/
-      KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/bank-realm
+      # Issuer — публичный адрес, должен совпадать с iss в токене (KC_HOSTNAME)
+      KEYCLOAK_ISSUER_URI: http://localhost:8090/realms/bank-realm
+      # Front-channel: браузер идёт сюда (должен резолвиться у пользователя)
+      KEYCLOAK_ISSUER_EXT_URI: http://localhost:8090/realms/bank-realm/protocol/openid-connect/auth
+      # Back-channel: front-ui ходит сюда изнутри Docker-сети
+      KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/token
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/certs
+      KEYCLOAK_USER_INFO_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/userinfo
+      UI_CLIENT: front-ui
     depends_on:
       keycloak:
         condition: service_healthy

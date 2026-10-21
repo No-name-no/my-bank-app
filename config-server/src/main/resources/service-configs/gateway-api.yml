@@ -8,13 +8,14 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/bank-realm}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8090/realms/bank-realm/protocol/openid-connect/certs}
   cloud:
     gateway:
       server:
         webflux:
           httpclient:
             pool:
-              max-idle-time: 5s # Должно быть меньше, чем connectionTimeout на Tomcat
+              max-idle-time: 5s
           routes:
             - id: accounts-route
               uri: lb://accounts-service
