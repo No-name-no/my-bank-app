@@ -1,15 +1,10 @@
-package org.mnuykin;
+package org.mnuykin.controller;
 
 import org.junit.jupiter.api.Test;
-import org.mnuykin.config.SecurityConfig;
 import org.mnuykin.dto.AccountDto;
-import org.mnuykin.exception.GlobalExceptionHandler;
 import org.mnuykin.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
@@ -20,12 +15,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockJwt;
 
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
-class AccountControllerTest {
+public class AccountControllerTest extends BaseControllerTest {
+    @Autowired
+    private AccountService accountService;
 
-    @Autowired WebTestClient webTestClient;
-
-    @MockitoBean AccountService accountService;
+    @Autowired
+    private WebTestClient webTestClient;
 
     @Test
     void me_shouldReturn200_forUser() {

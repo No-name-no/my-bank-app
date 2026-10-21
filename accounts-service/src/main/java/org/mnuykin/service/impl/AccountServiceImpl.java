@@ -71,10 +71,8 @@ public class AccountServiceImpl implements AccountService {
             return Mono.error(new IllegalArgumentException("Нельзя переводить на тот же счёт"));
         }
 
-        return Mono.zip(
-                executeDecrement(srcLogin, amount),
-                executeIncrement(dstLogin, amount)
-        ).then();
+        return executeDecrement(srcLogin, amount)
+                .then(Mono.defer(() -> executeIncrement(dstLogin, amount)));
     }
 
     private Mono<Void> executeIncrement(String login, BigDecimal amount){

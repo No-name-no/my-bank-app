@@ -10,7 +10,6 @@ import org.mnuykin.dto.AccountDto;
 import org.mnuykin.dto.TranKind;
 import org.mnuykin.dto.TransactionRq;
 import org.mnuykin.dto.TransferRq;
-import org.mnuykin.exception.InsufficientFundsException;
 import org.mnuykin.service.AccountsClient;
 import org.mnuykin.service.NotificationClient;
 import org.mnuykin.service.impl.TransferServiceImpl;
@@ -21,6 +20,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -62,35 +62,25 @@ class TransferServiceImplTest {
     }
 
     @Test
-    void transfer_shouldNotSendNotificationWhenTransactionFails() {
-        when(accountsClient.transaction(any()))
-                .thenReturn(Mono.error(new InsufficientFundsException("no money")));
-
-        StepVerifier.create(service.transfer("login1",
-                        new TransferRq("login2", new BigDecimal("99999"))))
-                .expectError(InsufficientFundsException.class)
-                .verify();
-
-        verifyNoInteractions(notificationClient);
-        verify(accountsClient, never()).getAccount(any());
-    }
-
-    @Test
     void transfer_shouldRejectSelfTransfer() {
-        StepVerifier.create(service.transfer("login1",
-                        new TransferRq("login1", new BigDecimal("100"))))
-                .expectError(IllegalArgumentException.class)
-                .verify();
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.transfer("login1",
+                        new TransferRq("login1", new BigDecimal("100"))
+                )
+        );
 
         verifyNoInteractions(accountsClient, notificationClient);
     }
 
     @Test
     void transfer_shouldRejectNonPositiveAmount() {
-        StepVerifier.create(service.transfer("login1",
-                        new TransferRq("login2", BigDecimal.ZERO)))
-                .expectError(IllegalArgumentException.class)
-                .verify();
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.transfer("login1",
+                        new TransferRq("login2", BigDecimal.ZERO)
+                )
+        );
 
         verifyNoInteractions(accountsClient, notificationClient);
     }

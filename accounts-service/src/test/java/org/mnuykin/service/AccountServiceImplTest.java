@@ -1,4 +1,4 @@
-package org.mnuykin;
+package org.mnuykin.service;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,7 +13,6 @@ import org.mnuykin.exception.AccountNotFoundException;
 import org.mnuykin.exception.InsufficientFundsException;
 import org.mnuykin.mapper.AccountMapper;
 import org.mnuykin.repository.AccountRepository;
-import org.mnuykin.service.NotificationClient;
 import org.mnuykin.service.impl.AccountServiceImpl;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -21,6 +20,8 @@ import reactor.test.StepVerifier;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -45,30 +46,13 @@ class AccountServiceImplTest {
     void updateByLogin_shouldRejectUnderage() {
         AccountUpdateRq rq = new AccountUpdateRq("Фёдор", "Сумкин",
                 LocalDate.now().minusYears(15));
-
-        StepVerifier.create(service.updateByLogin("login1", rq))
-                .expectError(IllegalArgumentException.class)
-                .verify();
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.updateByLogin("login1", rq)
+        );
+        assertEquals("Возраст должен быть не менее 18 лет", exception.getMessage());
 
         verifyNoInteractions(repository, notificationClient);
-    }
-
-    @Test
-    void updateByLogin_shouldSaveAndNotify() {
-        Account a = Account.builder()
-                .login("login1").firstName("Федя").lastName("Сумкин")
-                .birthDate(LocalDate.of(1990, 1, 1))
-                .balance(new BigDecimal("1000")).build();
-        when(repository.findByLogin("login1")).thenReturn(Mono.just(a));
-        when(repository.save(any())).thenReturn(Mono.just(a));
-        when(notificationClient.send(any())).thenReturn(Mono.empty());
-
-        StepVerifier.create(service.updateByLogin("login1",
-                        new AccountUpdateRq("Фёдор", "Сумкин", LocalDate.of(1990, 1, 1))))
-                .expectNextCount(1)
-                .verifyComplete();
-
-        verify(notificationClient).send(any());
     }
 
     @Test

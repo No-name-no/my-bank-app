@@ -11,6 +11,8 @@ import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
@@ -23,11 +25,17 @@ import static org.springframework.security.test.web.reactive.server.SecurityMock
 
 @WebFluxTest(controllers = TransferController.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@TestPropertySource(properties = {
+        "spring.cloud.config.enabled=false"
+})
 class TransferControllerTest {
 
     @Autowired WebTestClient webTestClient;
 
     @MockitoBean TransferService transferService;
+
+    @MockitoBean
+    protected ReactiveJwtDecoder reactiveJwtDecoder;
 
     @Test
     void transfer_shouldReturn200() {
@@ -37,7 +45,7 @@ class TransferControllerTest {
 
         webTestClient.mutateWith(mockJwt()
                         .jwt(j -> j.claim("preferred_username", "login1"))
-                        .authorities(new SimpleGrantedAuthority("transfer-service_TRANSFER_WRITE")))
+                        .authorities(new SimpleGrantedAuthority("ROLE_USER"), new SimpleGrantedAuthority("transfer-service_TRANSFER_WRITE")))
                 .post().uri("/transfer")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("{\"recipientLogin\":\"login2\",\"amount\":100}")

@@ -11,6 +11,8 @@ import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
@@ -23,11 +25,17 @@ import static org.springframework.security.test.web.reactive.server.SecurityMock
 
 @WebFluxTest(controllers = CashController.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class})
+@TestPropertySource(properties = {
+        "spring.cloud.config.enabled=false"
+})
 class CashControllerTest {
 
     @Autowired WebTestClient webTestClient;
 
     @MockitoBean CashService cashService;
+
+    @MockitoBean
+    protected ReactiveJwtDecoder reactiveJwtDecoder;
 
     @Test
     void deposit_shouldReturn200() {

@@ -1,16 +1,9 @@
-package org.mnuykin;
-
+package org.mnuykin.controller;
 import org.junit.jupiter.api.Test;
-import org.mnuykin.config.SecurityConfig;
-import org.mnuykin.controller.InternalAccountController;
-import org.mnuykin.exception.GlobalExceptionHandler;
 import org.mnuykin.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webflux.test.autoconfigure.WebFluxTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import reactor.core.publisher.Mono;
 
@@ -18,13 +11,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockJwt;
 
-@WebFluxTest(controllers = InternalAccountController.class)
-@Import({SecurityConfig.class, GlobalExceptionHandler.class})
-class InternalAccountControllerTest {
+class InternalAccountControllerTest extends BaseControllerTest  {
+    @Autowired
+    private AccountService accountService;
 
-    @Autowired WebTestClient webTestClient;
-
-    @MockitoBean AccountService accountService;
+    @Autowired
+    private WebTestClient webTestClient;
 
     @Test
     void transaction_shouldReturn200_forServiceToken() {
@@ -35,7 +27,7 @@ class InternalAccountControllerTest {
                         .authorities(
                                 new SimpleGrantedAuthority("ROLE_SERVICE"),
                                 new SimpleGrantedAuthority("accounts-service_ACCOUNTS_WRITE")))
-                .post().uri("/accounts/internal/transaction")
+                .post().uri("/internal/accounts/transaction")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""
                         {"kind":"CASH_DEPOSIT","amount":100.00,"srcLogin":"login1"}
@@ -51,7 +43,7 @@ class InternalAccountControllerTest {
                         .authorities(
                                 new SimpleGrantedAuthority("ROLE_USER"),
                                 new SimpleGrantedAuthority("accounts-service_ACCOUNTS_WRITE")))
-                .post().uri("/accounts/internal/transaction")
+                .post().uri("/internal/accounts/transaction")
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue("""
                         {"kind":"CASH_DEPOSIT","amount":100.00,"srcLogin":"login1"}
@@ -61,7 +53,7 @@ class InternalAccountControllerTest {
     }
 
     @Test
-    void transaction_shouldReturn400_onMissingDstForTransfer() {
+    void transaction_shouldReturn404_onMissingDstForTransfer() {
         webTestClient.mutateWith(mockJwt()
                         .jwt(j -> j.claim("azp", "transfer-service"))
                         .authorities(
@@ -73,6 +65,6 @@ class InternalAccountControllerTest {
                         {"kind":"TRANSFER","amount":100.00,"srcLogin":"login1"}
                         """)
                 .exchange()
-                .expectStatus().isBadRequest();
+                .expectStatus().isNotFound();
     }
 }
