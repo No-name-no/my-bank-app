@@ -37,16 +37,28 @@ public class AccountServiceImpl implements AccountService {
     @Transactional
     public Mono<AccountDto> updateByLogin(String login, AccountUpdateRq updateRq) {
         validateAge(updateRq.getBirthday());
-        return findByLoginOrThrow(login).flatMap(account -> {
+        return findByLoginOrThrow(login).flatMap(account -> accountRepository
+                .updateProfile(
+                        account.getId(),
+                        updateRq.getFirstName(),
+                        updateRq.getLastName(),
+                        updateRq.getBirthday())
+                .flatMap(updated -> {
+                    if (updated == 0) {
+                        return Mono.error(new AccountNotFoundException("Аккаунт не найден: " + login));
+                    }
                     account.setFirstName(updateRq.getFirstName());
                     account.setLastName(updateRq.getLastName());
                     account.setBirthDate(updateRq.getBirthday());
-                    return accountRepository.save(account);
-                }).flatMap(saved -> notificationClient.send(new NotificationsRq(saved.getLogin(),
-                                "Профиль обновлён",
-                                "Данные аккаунта изменены: " + saved.getFirstName() + " " + saved.getLastName())
-                        ).thenReturn(saved)
-                ).map(accountMapper::toDto);
+                    return Mono.just(account);
+                })
+        ).flatMap(account -> notificationClient
+                .send(new NotificationsRq(
+                        account.getLogin(),
+                        "Профиль обновлён",
+                        "Данные аккаунта изменены: " + account.getFirstName() + " " + account.getLastName())
+                ).thenReturn(account)
+        ).map(accountMapper::toDto);
     }
 
     @Override

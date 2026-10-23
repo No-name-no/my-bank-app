@@ -40,7 +40,10 @@
 
 ###  Docker Compose
 
+Dockerfile'ы используют уже собранные JAR-артефакты из `target/`, поэтому перед `docker compose` необходимо собрать модули Maven'ом:
+
 ```bash
+mvn clean package -DskipTests
 docker compose up --build
 ```
 
