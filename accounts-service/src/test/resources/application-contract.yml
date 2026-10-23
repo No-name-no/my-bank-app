@@ -1,0 +1,12 @@
+logging:
+  level:
+    org.springframework.cloud.config: WARN
+    org.springframework.cloud.netflix: WARN
+    org.springframework.security.oauth2: WARN
+
+bank:
+  notifications-service:
+    base-url: http://notifications-service
+  oauth2:
+    registration:
+      notifications: notifications

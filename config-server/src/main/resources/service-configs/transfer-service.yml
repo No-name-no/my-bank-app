@@ -1,0 +1,38 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: transfer-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8090/realms/bank-realm}
+          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI:http://localhost:8090/realms/bank-realm/protocol/openid-connect/certs}
+      client:
+        provider:
+          keycloak:
+            token-uri: ${KEYCLOAK_TOKEN_URI:http://localhost:8090/realms/bank-realm/protocol/openid-connect/token}
+        registration:
+          accounts:
+            provider: keycloak
+            client-id: transfer-service
+            client-secret: ${TRANSFER_CLIENT_SECRET:transfer-secret}
+            authorization-grant-type: client_credentials
+          notifications:
+            provider: keycloak
+            client-id: transfer-service
+            client-secret: ${TRANSFER_CLIENT_SECRET:transfer-secret}
+            authorization-grant-type: client_credentials
+
+bank:
+  accounts-service:
+    base-url: http://accounts-service
+  notifications-service:
+    base-url: http://notifications-service
+  oauth2:
+    registration:
+      accounts: accounts
+      notifications: notifications
