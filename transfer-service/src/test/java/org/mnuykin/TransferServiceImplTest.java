@@ -2,6 +2,7 @@ package org.mnuykin;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mnuykin.producer.NotificationProducer;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -11,7 +12,6 @@ import org.mnuykin.dto.TranKind;
 import org.mnuykin.dto.TransactionRq;
 import org.mnuykin.dto.TransferRq;
 import org.mnuykin.service.AccountsClient;
-import org.mnuykin.service.NotificationClient;
 import org.mnuykin.service.impl.TransferServiceImpl;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -28,7 +28,8 @@ import static org.mockito.Mockito.*;
 class TransferServiceImplTest {
 
     @Mock AccountsClient accountsClient;
-    @Mock NotificationClient notificationClient;
+    @Mock
+    NotificationProducer notificationClient;
     @InjectMocks TransferServiceImpl service;
 
     @Test
@@ -63,7 +64,7 @@ class TransferServiceImplTest {
 
     @Test
     void transfer_shouldRejectSelfTransfer() {
-        IllegalArgumentException exception = assertThrows(
+        assertThrows(
                 IllegalArgumentException.class,
                 () -> service.transfer("login1",
                         new TransferRq("login1", new BigDecimal("100"))
@@ -75,7 +76,7 @@ class TransferServiceImplTest {
 
     @Test
     void transfer_shouldRejectNonPositiveAmount() {
-        IllegalArgumentException exception = assertThrows(
+        assertThrows(
                 IllegalArgumentException.class,
                 () -> service.transfer("login1",
                         new TransferRq("login2", BigDecimal.ZERO)

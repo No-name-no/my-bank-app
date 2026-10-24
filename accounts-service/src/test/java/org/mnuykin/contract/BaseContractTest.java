@@ -7,6 +7,7 @@ import org.mnuykin.dto.AccountShortDto;
 import org.mnuykin.dto.AccountUpdateRq;
 import org.mnuykin.dto.TransactionRq;
 import org.mnuykin.exception.InsufficientFundsException;
+import org.mnuykin.producer.NotificationProducer;
 import org.mnuykin.service.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,8 +40,8 @@ import static org.mockito.Mockito.when;
                 "spring.r2dbc.username=fake",
                 "spring.r2dbc.password=fake",
                 "spring.sql.init.mode=never",
-                // issuer-uri оставляем пустым — стаб-декодер перекроет автоконфиг
-                "spring.security.oauth2.resourceserver.jwt.issuer-uri="
+                "spring.security.oauth2.resourceserver.jwt.issuer-uri=",
+                "spring.autoconfigure.exclude=org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration"
         })
 @org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 @ActiveProfiles("contract")
@@ -52,6 +53,9 @@ public abstract class BaseContractTest {
 
     @MockitoBean
     ReactiveOAuth2AuthorizedClientManager authorizedClientManager;
+
+    @MockitoBean
+    NotificationProducer notificationProducer;
 
     @MockitoBean
     AccountService accountService;

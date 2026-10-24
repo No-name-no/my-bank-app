@@ -7,9 +7,9 @@ import org.mnuykin.entity.Account;
 import org.mnuykin.exception.AccountNotFoundException;
 import org.mnuykin.exception.InsufficientFundsException;
 import org.mnuykin.mapper.AccountMapper;
+import org.mnuykin.producer.NotificationProducer;
 import org.mnuykin.repository.AccountRepository;
 import org.mnuykin.service.AccountService;
-import org.mnuykin.service.NotificationClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
@@ -26,7 +26,7 @@ public class AccountServiceImpl implements AccountService {
 
     private final AccountRepository accountRepository;
     private final AccountMapper accountMapper;
-    private final NotificationClient notificationClient;
+    private final NotificationProducer notificationProducer;
 
     @Override
     public Mono<AccountDto> getByLogin(String login) {
@@ -52,7 +52,7 @@ public class AccountServiceImpl implements AccountService {
                     account.setBirthDate(updateRq.getBirthday());
                     return Mono.just(account);
                 })
-        ).flatMap(account -> notificationClient
+        ).flatMap(account -> notificationProducer
                 .send(new NotificationsRq(
                         account.getLogin(),
                         "Профиль обновлён",

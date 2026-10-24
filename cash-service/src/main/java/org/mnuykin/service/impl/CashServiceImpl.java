@@ -2,11 +2,11 @@ package org.mnuykin.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.mnuykin.service.NotificationClient;
 import org.mnuykin.dto.CashRs;
 import org.mnuykin.dto.NotificationsRq;
 import org.mnuykin.dto.TranKind;
 import org.mnuykin.dto.TransactionRq;
+import org.mnuykin.producer.NotificationProducer;
 import org.mnuykin.service.AccountsClient;
 import org.mnuykin.service.CashService;
 import org.springframework.stereotype.Service;
@@ -23,7 +23,7 @@ public class CashServiceImpl implements CashService {
     private static final String OPERATION_WITHDRAW = "WITHDRAW";
 
     private final AccountsClient accountsClient;
-    private final NotificationClient notificationClient;
+    private final NotificationProducer notificationProducer;
 
     @Override
     public Mono<CashRs> deposit(String login, BigDecimal amount) {
@@ -35,7 +35,7 @@ public class CashServiceImpl implements CashService {
 
         return accountsClient.transaction(rq)
                 .then(accountsClient.getAccount(login))
-                .flatMap(account -> notificationClient
+                .flatMap(account -> notificationProducer
                         .send(new NotificationsRq(
                                 login,
                                 "Пополнение счёта",
@@ -56,7 +56,7 @@ public class CashServiceImpl implements CashService {
 
         return accountsClient.transaction(rq)
                 .then(accountsClient.getAccount(login))
-                .flatMap(account -> notificationClient
+                .flatMap(account -> notificationProducer
                         .send(new NotificationsRq(
                                 login,
                                 "Снятие со счёта",
