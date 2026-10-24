@@ -5,6 +5,26 @@ spring:
   application:
     name: transfer-service
 
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092,localhost:9094,localhost:9096}
+    producer:
+      # Надёжность: acks=all + идемпотентность
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+        delivery.timeout.ms: 30000
+        request.timeout.ms: 10000
+        linger.ms: 5
+        batch.size: 16384
+
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    admin:
+      client-id: accounts-service
+      fail-fast: false
+
   security:
     oauth2:
       resourceserver:

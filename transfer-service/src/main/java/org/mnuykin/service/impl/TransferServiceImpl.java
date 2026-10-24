@@ -7,8 +7,8 @@ import org.mnuykin.dto.TranKind;
 import org.mnuykin.dto.TransactionRq;
 import org.mnuykin.dto.TransferRq;
 import org.mnuykin.dto.TransferRs;
+import org.mnuykin.producer.NotificationProducer;
 import org.mnuykin.service.AccountsClient;
-import org.mnuykin.service.NotificationClient;
 import org.mnuykin.service.TransferService;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -23,7 +23,7 @@ public class TransferServiceImpl implements TransferService {
     private static final String OPERATION_TRANSFER = "TRANSFER";
 
     private final AccountsClient accountsClient;
-    private final NotificationClient notificationClient;
+    private final NotificationProducer notificationProducer;
 
     @Override
     public Mono<TransferRs> transfer(String senderLogin, TransferRq rq) {
@@ -39,7 +39,7 @@ public class TransferServiceImpl implements TransferService {
 
         return accountsClient.transaction(transaction)
                 .then(accountsClient.getAccount(senderLogin))
-                .flatMap(sender -> notificationClient
+                .flatMap(sender -> notificationProducer
                         .send(new NotificationsRq(
                                 senderLogin,
                                 "Перевод средств",

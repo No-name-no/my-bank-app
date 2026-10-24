@@ -2,7 +2,7 @@ package org.mnuykin;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mnuykin.service.NotificationClient;
+import org.mnuykin.producer.NotificationProducer;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -28,7 +28,7 @@ class CashServiceImplTest {
 
     @Mock AccountsClient accountsClient;
     @Mock
-    NotificationClient notificationClient;
+    NotificationProducer notificationClient;
     @InjectMocks CashServiceImpl service;
 
     @Test
@@ -76,7 +76,7 @@ class CashServiceImplTest {
 
     @Test
     void deposit_shouldRejectNonPositiveAmount() {
-        IllegalArgumentException exception = assertThrows(
+        assertThrows(
                 IllegalArgumentException.class,
                 () -> service.deposit("login1", BigDecimal.ZERO)
         );

@@ -1,2 +1,26 @@
 server:
   port: 8089
+
+spring:
+  application:
+    name: notifications-service
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092,localhost:9094,localhost:9096}
+    consumer:
+      group-id: notification-group
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      max-poll-records: 50
+      key-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        "spring.deserializer.key.delegate.class": org.apache.kafka.common.serialization.StringDeserializer
+        "spring.deserializer.value.delegate.class": org.springframework.kafka.support.serializer.JsonDeserializer
+        "spring.json.trusted.packages": org.mnuykin.notifications.dto
+        "spring.json.value.default.type": org.mnuykin.notifications.dto.NotificationsRq
+        "spring.json.use.type.headers": false
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    admin:
+      fail-fast: false
