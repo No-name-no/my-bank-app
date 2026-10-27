@@ -18,14 +18,8 @@ public class WebClientConfig {
     @Value("${bank.accounts-service.base-url:http://accounts-service}")
     private String accountsServiceBaseUrl;
 
-    @Value("${bank.notifications-service.base-url:http://notifications-service}")
-    private String notificationsServiceBaseUrl;
-
     @Value("${bank.oauth2.registration.accounts:accounts}")
     private String accountsRegistrationId;
-
-    @Value("${bank.oauth2.registration.notifications:notifications}")
-    private String notificationsRegistrationId;
 
     @Bean
     @LoadBalanced
@@ -52,22 +46,6 @@ public class WebClientConfig {
                 new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(registrations, service);
         manager.setAuthorizedClientProvider(provider);
         return manager;
-    }
-
-    @Bean
-    public WebClient notificationsWebClient(
-            @LoadBalanced WebClient.Builder loadBalancedBuilder,
-            ReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
-
-        ServerOAuth2AuthorizedClientExchangeFilterFunction oauth2 =
-                new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
-
-        oauth2.setDefaultClientRegistrationId(notificationsRegistrationId);
-
-        return loadBalancedBuilder.clone()
-                .baseUrl(notificationsServiceBaseUrl)
-                .filter(oauth2)
-                .build();
     }
 
     @Bean

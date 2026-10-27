@@ -1,4 +1,4 @@
-package org.mnuykin.notifications.controller.dto;
+package org.mnuykin.notifications.dto;
 
 import jakarta.validation.constraints.NotBlank;
 

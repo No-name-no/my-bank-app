@@ -29,7 +29,6 @@ import static org.mockito.Mockito.*;
 class AccountServiceImplTest {
 
     @Mock AccountRepository repository;
-    @Mock NotificationClient notificationClient;
     @Mock AccountMapper mapper;
     @InjectMocks AccountServiceImpl service;
 
@@ -52,7 +51,7 @@ class AccountServiceImplTest {
         );
         assertEquals("Возраст должен быть не менее 18 лет", exception.getMessage());
 
-        verifyNoInteractions(repository, notificationClient);
+        verifyNoInteractions(repository);
     }
 
     @Test
