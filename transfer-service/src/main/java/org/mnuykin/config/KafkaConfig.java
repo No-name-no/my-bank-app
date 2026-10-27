@@ -1,8 +1,11 @@
 package org.mnuykin.config;
 
-import io.micrometer.observation.ObservationRegistry;
+import brave.Tracing;
+import brave.kafka.clients.KafkaTracing;
+import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.mnuykin.dto.NotificationsRq;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,26 +19,31 @@ import java.util.Map;
 
 @Configuration
 @Profile("!contract")
+@RequiredArgsConstructor
 public class KafkaConfig {
     public static final String TRANSFER = "transfer-service";
 
     @Bean
     public ProducerFactory<String, NotificationsRq> notificationProducerFactory(
-            KafkaProperties kafkaProperties) {
+            KafkaProperties kafkaProperties,
+            ObjectProvider<Tracing> tracingProvider) {
         Map<String, Object> props = kafkaProperties.buildProducerProperties();
-        return new DefaultKafkaProducerFactory<>(props);
+        DefaultKafkaProducerFactory<String, NotificationsRq> factory =
+                new DefaultKafkaProducerFactory<>(props);
+
+        tracingProvider.ifAvailable(tracing -> {
+            KafkaTracing kafkaTracing = KafkaTracing.create(tracing);
+            factory.addPostProcessor(kafkaTracing::producer);
+        });
+
+        return factory;
     }
 
     @Bean
     public KafkaTemplate<String, NotificationsRq> notificationKafkaTemplate(
-            ProducerFactory<String, NotificationsRq> notificationProducerFactory,
-            ObservationRegistry observationRegistry) {
-        KafkaTemplate<String, NotificationsRq> template = new KafkaTemplate<>(notificationProducerFactory);
-        template.setObservationEnabled(true);
-        template.setObservationRegistry(observationRegistry);
-        return template;
+            ProducerFactory<String, NotificationsRq> notificationProducerFactory) {
+        return new KafkaTemplate<>(notificationProducerFactory);
     }
-
     @Bean
     public NewTopic accountsService() {
         return TopicBuilder.name(TRANSFER).partitions(3).replicas(3).build();

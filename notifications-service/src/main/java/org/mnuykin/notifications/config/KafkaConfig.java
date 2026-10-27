@@ -2,7 +2,6 @@ package org.mnuykin.notifications.config;
 
 import brave.Tracing;
 import brave.kafka.clients.KafkaTracing;
-import io.micrometer.observation.ObservationRegistry;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.TopicPartition;
 import org.mnuykin.notifications.dto.NotificationsRq;
@@ -49,8 +48,7 @@ public class KafkaConfig {
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, NotificationsRq> batchKafkaListenerContainerFactory(
             ConsumerFactory<String, NotificationsRq> notificationConsumerFactory,
-            KafkaTemplate<String, NotificationsRq> kafkaTemplate,
-            ObservationRegistry observationRegistry) {
+            KafkaTemplate<String, NotificationsRq> kafkaTemplate){
 
         ConcurrentKafkaListenerContainerFactory<String, NotificationsRq> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
@@ -58,9 +56,6 @@ public class KafkaConfig {
 
         factory.setBatchListener(true);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
-
-        factory.getContainerProperties().setObservationEnabled(true);
-        factory.getContainerProperties().setObservationRegistry(observationRegistry);
 
         // DLQ: сбойная запись (индекс которой указан в BatchListenerFailedException) уходит в топики <topic>-dlt
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(

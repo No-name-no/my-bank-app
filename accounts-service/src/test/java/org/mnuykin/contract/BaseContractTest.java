@@ -41,7 +41,8 @@ import static org.mockito.Mockito.when;
                 "spring.r2dbc.password=fake",
                 "spring.sql.init.mode=never",
                 "spring.security.oauth2.resourceserver.jwt.issuer-uri=",
-                "spring.autoconfigure.exclude=org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration"
+                "spring.autoconfigure.exclude=org.springframework.boot.kafka.autoconfigure.KafkaAutoConfiguration",
+                "logging.config=classpath:logback-test.xml"
         })
 @org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient
 @ActiveProfiles("contract")

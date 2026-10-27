@@ -1,4 +1,7 @@
 #Общий файл конфигурации
+spring:
+  reactor:
+    context-propagation: auto
 
 eureka:
   client:
@@ -6,9 +9,6 @@ eureka:
       defaultZone: ${DISCOVERY_SERVER_URI:http://127.0.0.1:8761/eureka/}
   instance:
     prefer-ip-address: true
-spring:
-  reactor:
-    context-propagation: auto
 
 management:
   tracing:
@@ -18,6 +18,8 @@ management:
       enabled: true
       zipkin:
         endpoint: ${ZIPKIN_ENDPOINT:http://zipkin:9411/api/v2/spans}
+    propagation:
+      type: b3
 
   endpoints:
     web:
@@ -34,11 +36,5 @@ management:
         http.server.requests: true
 
 logging:
-  pattern:
-    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}] "
-    include-application-name: false
   level:
     org.mnuykin: DEBUG
-    org.springframework.security.oauth2.client: INFO
-    org.springframework.security.oauth2: INFO
-    reactor.netty.http.client: DEBUG

@@ -52,7 +52,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.security.oauth2.client.provider.keycloak.token-uri=http://localhost:8090/token",
         "spring.security.oauth2.client.provider.keycloak.jwk-set-uri=http://localhost:8090/certs",
         "spring.security.oauth2.client.provider.keycloak.user-info-uri=http://localhost:8090/userinfo",
-        "spring.security.oauth2.client.provider.keycloak.user-name-attribute=preferred_username"
+        "spring.security.oauth2.client.provider.keycloak.user-name-attribute=preferred_username",
+        "logging.config=classpath:logback-test.xml",
 })
 class MainControllerTest {
 

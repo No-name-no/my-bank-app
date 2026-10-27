@@ -3,6 +3,8 @@
 
 Взаимодействие внутренних сервисов с notifications-service осуществляется через Kafka - используется трех узловой кластер в docker.
 
+Приложение использует трейсинг Zipkin мониторинги/графики метрик и алерты с использованием Prometheus и Grafana, а так же логирование с использованием ELK-стека.
+
 | Компонент                 | Роль                                                                                           |
 |---------------------------|------------------------------------------------------------------------------------------------|
 | **config-server**         | Spring Cloud Config — внешние конфигурации                                                     |
@@ -34,9 +36,9 @@
 | 9411 | Zipkin                |
 | 9412 | Prometheus            |
 | 9413 | Grafana               |
-|      |                       |
-|      |                       |
-|      |                       |
+| 9414 | Elasticsearch         |
+| 9415 | Kibana                |
+| 5000 | Logstas               |
 ---
 
 ## Запуск
@@ -64,7 +66,8 @@ docker compose up --build
 - Eureka: http://localhost:8761
 - Gateway: http://localhost:8081
 - Zipkin: http://localhost:9411/zipkin/
-- grafana http://localhost:9413 (`admin/admin`)
+- Grafana http://localhost:9413 (`admin/admin`)
+- Kibana http://localhost:9415
 
 Остановить:
 
@@ -72,6 +75,12 @@ docker compose up --build
 docker compose down          # сохранить данные
 docker compose down -v       # удалить volume с БД
 ```
+
+Kibana: Data View:
+1) Stack Management → Data Views → Create data view.
+2) Name: bank-logs, Index pattern: bank-logs-*, Timestamp field: @timestamp.
+3) Save data view to Kibana.
+4) Проверка: перейдите в Discover, выберите bank-logs вверху, диапазон времени — Last 15 minutes.
 
 ## Архитектура
 ![img.png](img.png)

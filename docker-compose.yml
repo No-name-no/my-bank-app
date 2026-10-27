@@ -16,6 +16,8 @@ services:
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
       KC_HOSTNAME_STRICT: "false"
       KC_HEALTH_ENABLED: "true"
+      KC_HTTP_ENABLED: "true" #HTTPS required иногда возникает
+      KC_HOSTNAME_STRICT_HTTPS: "false"
     ports:
       - "8090:8090"
     volumes:
@@ -277,6 +279,54 @@ services:
       - prometheus
     networks:
       - bank-network
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.5.5
+    container_name: bank-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9414:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+    networks:
+      - bank-network
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:9.5.5
+    container_name: bank-logstash
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./elk/logstash/pipeline:/usr/share/logstash/pipeline
+    environment:
+      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - bank-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:9.5.5
+    container_name: bank-kibana
+    ports:
+      - "9415:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - bank-network
 
   #Кластер Apache Kafka из трех нод
   kafka1:
@@ -382,6 +432,7 @@ volumes:
   postgres-data:
   prometheus-data:
   grafana-data:
+  elasticsearch-data:
   kafka1-data:
   kafka2-data:
   kafka3-data:

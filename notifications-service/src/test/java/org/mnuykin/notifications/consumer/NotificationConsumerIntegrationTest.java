@@ -40,7 +40,8 @@ import static org.mockito.Mockito.*;
         "spring.cloud.config.enabled=false",
         "spring.cloud.config.fail-fast=false",
         "eureka.client.enabled=false",
-        "spring.cloud.discovery.enabled=false"
+        "spring.cloud.discovery.enabled=false",
+        "logging.config=classpath:logback-test.xml",
 })
 @EmbeddedKafka(
         partitions = 3,
