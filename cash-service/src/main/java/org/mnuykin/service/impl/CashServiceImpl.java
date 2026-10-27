@@ -39,7 +39,11 @@ public class CashServiceImpl implements CashService {
                         .send(new NotificationsRq(
                                 login,
                                 "Пополнение счёта",
-                                "Счёт пополнен на " + amount + " руб."))
+                                "Счёт пополнен на " + amount + " руб.")
+                        ).doOnError(throwable -> log.warn(
+                                "Не удалось отправить уведомление о пополнении наличных профиля, login={}",
+                                account.getLogin(), throwable)
+                        ).onErrorResume(throwable -> Mono.empty())
                         .thenReturn(new CashRs(
                                 account.getLogin(),
                                 account.getBalance(),
@@ -60,7 +64,11 @@ public class CashServiceImpl implements CashService {
                         .send(new NotificationsRq(
                                 login,
                                 "Снятие со счёта",
-                                "Со счёта снято " + amount + " руб."))
+                                "Со счёта снято " + amount + " руб.")
+                        ).doOnError(throwable -> log.warn(
+                                "Не удалось отправить уведомление об снятии наличных с профиля, login={}",
+                                account.getLogin(), throwable)
+                        ).onErrorResume(throwable -> Mono.empty())
                         .thenReturn(new CashRs(
                                 account.getLogin(),
                                 account.getBalance(),

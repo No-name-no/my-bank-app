@@ -44,7 +44,11 @@ public class TransferServiceImpl implements TransferService {
                                 senderLogin,
                                 "Перевод средств",
                                 "Перевод " + amount + " руб. на счёт "
-                                        + recipientLogin + " выполнен"))
+                                        + recipientLogin + " выполнен")
+                        ).doOnError(throwable -> log.warn(
+                                "Не удалось отправить уведомление о переводе с профиля, login={}",
+                                senderLogin, throwable)
+                        ).onErrorResume(throwable -> Mono.empty())
                         .thenReturn(new TransferRs(
                                 sender.getLogin(),
                                 recipientLogin,

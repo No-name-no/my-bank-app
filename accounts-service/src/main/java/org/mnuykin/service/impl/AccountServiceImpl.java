@@ -57,7 +57,12 @@ public class AccountServiceImpl implements AccountService {
                         account.getLogin(),
                         "Профиль обновлён",
                         "Данные аккаунта изменены: " + account.getFirstName() + " " + account.getLastName())
-                ).thenReturn(account)
+                ).doOnError(throwable -> log.warn(
+                            "Не удалось отправить уведомление об обновлении профиля, login={}",
+                            account.getLogin(), throwable
+                        )
+                ).onErrorResume(throwable -> Mono.empty())
+                .thenReturn(account)
         ).map(accountMapper::toDto);
     }
 

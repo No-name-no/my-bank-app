@@ -22,7 +22,7 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     admin:
-      client-id: accounts-service
+      client-id: transfer-service
       fail-fast: false
 
   security:
