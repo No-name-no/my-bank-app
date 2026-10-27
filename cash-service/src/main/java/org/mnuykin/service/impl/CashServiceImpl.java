@@ -1,5 +1,7 @@
 package org.mnuykin.service.impl;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mnuykin.dto.CashRs;
@@ -24,6 +26,7 @@ public class CashServiceImpl implements CashService {
 
     private final AccountsClient accountsClient;
     private final NotificationProducer notificationProducer;
+    private final MeterRegistry meterRegistry;
 
     @Override
     public Mono<CashRs> deposit(String login, BigDecimal amount) {
@@ -40,9 +43,17 @@ public class CashServiceImpl implements CashService {
                                 login,
                                 "Пополнение счёта",
                                 "Счёт пополнен на " + amount + " руб.")
-                        ).doOnError(throwable -> log.warn(
-                                "Не удалось отправить уведомление о пополнении наличных профиля, login={}",
-                                account.getLogin(), throwable)
+                        ).doOnError(throwable -> {
+                                    log.warn(
+                                            "Не удалось отправить уведомление об обновлении профиля, login={}",
+                                            account.getLogin(), throwable
+                                    );
+                                    Counter.builder("notification.failures")
+                                            .description("Невозможность отправки уведомления")
+                                            .tag("login", login)
+                                            .register(meterRegistry)
+                                            .increment();
+                                }
                         ).onErrorResume(throwable -> Mono.empty())
                         .thenReturn(new CashRs(
                                 account.getLogin(),

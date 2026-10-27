@@ -23,7 +23,7 @@ public class SecurityConfig {
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .authorizeExchange(ex -> ex
-                        .pathMatchers("/actuator/health/**", "/actuator/info").permitAll()
+                        .pathMatchers("/actuator/**").permitAll()
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(o -> o
                         .jwt(j -> j.jwtAuthenticationConverter(converter)))

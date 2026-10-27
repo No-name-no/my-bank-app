@@ -1,8 +1,11 @@
 package org.mnuykin.service;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mnuykin.producer.NotificationProducer;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mnuykin.dto.AccountUpdateRq;
@@ -30,7 +33,16 @@ class AccountServiceImplTest {
 
     @Mock AccountRepository repository;
     @Mock AccountMapper mapper;
-    @InjectMocks AccountServiceImpl service;
+    @Mock NotificationProducer producer;
+
+    private final MeterRegistry registry = new SimpleMeterRegistry();
+
+    private AccountServiceImpl service;
+
+    @BeforeEach
+    void setUp() {
+        service = new AccountServiceImpl(repository, mapper, producer, registry);
+    }
 
     @Test
     void getByLogin_shouldThrow_whenNotFound() {

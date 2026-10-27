@@ -19,6 +19,20 @@ management:
       zipkin:
         endpoint: ${ZIPKIN_ENDPOINT:http://zipkin:9411/api/v2/spans}
 
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
 logging:
   pattern:
     correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}] "

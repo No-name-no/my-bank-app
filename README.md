@@ -32,8 +32,8 @@
 | 9094 | Kafka   2             |
 | 9096 | Kafka   3             |
 | 9411 | Zipkin                |
-|      |                       |
-|      |                       |
+| 9412 | Prometheus            |
+| 9413 | Grafana               |
 |      |                       |
 |      |                       |
 |      |                       |
@@ -64,6 +64,7 @@ docker compose up --build
 - Eureka: http://localhost:8761
 - Gateway: http://localhost:8081
 - Zipkin: http://localhost:9411/zipkin/
+- grafana http://localhost:9413 (`admin/admin`)
 
 Остановить:
 

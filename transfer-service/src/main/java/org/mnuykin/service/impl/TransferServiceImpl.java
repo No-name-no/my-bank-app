@@ -1,5 +1,7 @@
 package org.mnuykin.service.impl;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mnuykin.dto.NotificationsRq;
@@ -24,6 +26,7 @@ public class TransferServiceImpl implements TransferService {
 
     private final AccountsClient accountsClient;
     private final NotificationProducer notificationProducer;
+    private final MeterRegistry meterRegistry;
 
     @Override
     public Mono<TransferRs> transfer(String senderLogin, TransferRq rq) {
@@ -45,9 +48,17 @@ public class TransferServiceImpl implements TransferService {
                                 "Перевод средств",
                                 "Перевод " + amount + " руб. на счёт "
                                         + recipientLogin + " выполнен")
-                        ).doOnError(throwable -> log.warn(
-                                "Не удалось отправить уведомление о переводе с профиля, login={}",
-                                senderLogin, throwable)
+                        ).doOnError(throwable -> {
+                                    log.warn(
+                                            "Не удалось отправить уведомление об обновлении профиля, login={}",
+                                            recipientLogin, throwable
+                                    );
+                                    Counter.builder("notification.failures")
+                                            .description("Невозможность отправки уведомления")
+                                            .tag("login", recipientLogin)
+                                            .register(meterRegistry)
+                                            .increment();
+                                }
                         ).onErrorResume(throwable -> Mono.empty())
                         .thenReturn(new TransferRs(
                                 sender.getLogin(),

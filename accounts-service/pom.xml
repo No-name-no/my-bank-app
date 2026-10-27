@@ -70,7 +70,7 @@
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
 
-        <!-- Zipkin -->
+        <!-- Мониторинг и логи -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-zipkin</artifactId>
@@ -78,6 +78,10 @@
         <dependency>
             <groupId>io.r2dbc</groupId>
             <artifactId>r2dbc-proxy</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
 
         <dependency>

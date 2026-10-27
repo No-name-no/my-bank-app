@@ -1,5 +1,7 @@
 package org.mnuykin.service.impl;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mnuykin.dto.*;
@@ -27,6 +29,7 @@ public class AccountServiceImpl implements AccountService {
     private final AccountRepository accountRepository;
     private final AccountMapper accountMapper;
     private final NotificationProducer notificationProducer;
+    private final MeterRegistry meterRegistry;
 
     @Override
     public Mono<AccountDto> getByLogin(String login) {
@@ -57,10 +60,17 @@ public class AccountServiceImpl implements AccountService {
                         account.getLogin(),
                         "Профиль обновлён",
                         "Данные аккаунта изменены: " + account.getFirstName() + " " + account.getLastName())
-                ).doOnError(throwable -> log.warn(
-                            "Не удалось отправить уведомление об обновлении профиля, login={}",
-                            account.getLogin(), throwable
-                        )
+                ).doOnError(throwable -> {
+                            log.warn(
+                                    "Не удалось отправить уведомление об обновлении профиля, login={}",
+                                    account.getLogin(), throwable
+                            );
+                            Counter.builder("notification.failures")
+                                    .description("Невозможность отправки уведомления")
+                                    .tag("login", login)
+                                    .register(meterRegistry)
+                                    .increment();
+                        }
                 ).onErrorResume(throwable -> Mono.empty())
                 .thenReturn(account)
         ).map(accountMapper::toDto);
@@ -76,10 +86,29 @@ public class AccountServiceImpl implements AccountService {
     public Mono<Void> execTran(TransactionRq transactionRq) {
         final TranKind kind = transactionRq.getKind();
         return switch (kind) {
-            case CASH_WITHDRAWAL -> executeDecrement(transactionRq.getSrcLogin(), transactionRq.getAmount());
-            case CASH_DEPOSIT    -> executeIncrement(transactionRq.getSrcLogin(), transactionRq.getAmount());
+            case CASH_WITHDRAWAL -> executeDecrement(transactionRq.getSrcLogin(), transactionRq.getAmount())
+                    .doOnError(throwable -> Counter.builder("withdraw.failures")
+                            .description("Неуспешные попытки снятия денег")
+                            .tag("login", transactionRq.getSrcLogin())
+                            .register(meterRegistry)
+                            .increment()
+                    );
+            case CASH_DEPOSIT    -> executeIncrement(transactionRq.getSrcLogin(), transactionRq.getAmount())
+                    .doOnError(throwable -> Counter.builder("deposit.failures")
+                            .description("Неуспешные попытки пополнения счета")
+                            .tag("login", transactionRq.getSrcLogin())
+                            .register(meterRegistry)
+                            .increment()
+                    );
             case TRANSFER        -> executeTransfer(transactionRq.getSrcLogin(), transactionRq.getDstLogin(),
-                        transactionRq.getAmount());
+                            transactionRq.getAmount())
+                    .doOnError(throwable -> Counter.builder("transfer.failures")
+                            .description("Неуспешные попытки переводов")
+                            .tag("srcLogin", transactionRq.getSrcLogin())
+                            .tag("dstLogin", transactionRq.getDstLogin())
+                            .register(meterRegistry)
+                            .increment()
+                    );
         };
     }
 
