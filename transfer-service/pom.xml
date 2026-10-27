@@ -66,6 +66,12 @@
             <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
 
+        <!-- Zipkin -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-zipkin</artifactId>
+        </dependency>
+
         <!-- Spring  Test -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

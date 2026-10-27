@@ -1,5 +1,6 @@
 package org.mnuykin.config;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.mnuykin.dto.NotificationsRq;
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
@@ -25,8 +26,12 @@ public class KafkaConfig {
 
     @Bean
     public KafkaTemplate<String, NotificationsRq> notificationKafkaTemplate(
-            ProducerFactory<String, NotificationsRq> notificationProducerFactory) {
-        return new KafkaTemplate<>(notificationProducerFactory);
+            ProducerFactory<String, NotificationsRq> notificationProducerFactory,
+            ObservationRegistry observationRegistry) {
+        KafkaTemplate<String, NotificationsRq> template = new KafkaTemplate<>(notificationProducerFactory);
+        template.setObservationEnabled(true);
+        template.setObservationRegistry(observationRegistry);
+        return template;
     }
 
     @Bean

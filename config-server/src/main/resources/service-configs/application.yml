@@ -6,8 +6,23 @@ eureka:
       defaultZone: ${DISCOVERY_SERVER_URI:http://127.0.0.1:8761/eureka/}
   instance:
     prefer-ip-address: true
+spring:
+  reactor:
+    context-propagation: auto
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      enabled: true
+      zipkin:
+        endpoint: ${ZIPKIN_ENDPOINT:http://zipkin:9411/api/v2/spans}
 
 logging:
+  pattern:
+    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}] "
+    include-application-name: false
   level:
     org.mnuykin: DEBUG
     org.springframework.security.oauth2.client: INFO

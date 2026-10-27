@@ -22,6 +22,10 @@ spring:
     admin:
       client-id: accounts-service
       fail-fast: false
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
 
   r2dbc:
     url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:8091}/${DB_NAME:bank}?currentSchema=accounts

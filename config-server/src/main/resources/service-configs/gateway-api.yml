@@ -35,7 +35,6 @@ spring:
                 - Path=/transfer/**
               filters:
                 - BearerTokenRelay
-
 logging:
   level:
     org.springframework.cloud.gateway: TRACE

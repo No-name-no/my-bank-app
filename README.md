@@ -31,6 +31,12 @@
 | 9092 | Kafka   1             |
 | 9094 | Kafka   2             |
 | 9096 | Kafka   3             |
+| 9411 | Zipkin                |
+|      |                       |
+|      |                       |
+|      |                       |
+|      |                       |
+|      |                       |
 ---
 
 ## Запуск
@@ -57,6 +63,7 @@ docker compose up --build
 - Keycloak Admin: http://localhost:8090 (`admin/admin`)
 - Eureka: http://localhost:8761
 - Gateway: http://localhost:8081
+- Zipkin: http://localhost:9411/zipkin/
 
 Остановить:
 

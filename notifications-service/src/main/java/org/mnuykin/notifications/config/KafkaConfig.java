@@ -1,5 +1,8 @@
 package org.mnuykin.notifications.config;
 
+import brave.Tracing;
+import brave.kafka.clients.KafkaTracing;
+import io.micrometer.observation.ObservationRegistry;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.TopicPartition;
 import org.mnuykin.notifications.dto.NotificationsRq;
@@ -23,12 +26,21 @@ import java.util.Map;
 public class KafkaConfig {
     /**
      * ConsumerFactory собирается из application.properties через KafkaProperties.
+     * Добавлено оборачивание в KafkaTracing для корректной трассировки входящих сообщений.
      */
     @Bean
     public ConsumerFactory<String, NotificationsRq> notificationConsumerFactory(
-            org.springframework.boot.kafka.autoconfigure.KafkaProperties kafkaProperties) {
+            org.springframework.boot.kafka.autoconfigure.KafkaProperties kafkaProperties,
+            Tracing tracing) { // Внедряем Brave Tracing
         Map<String, Object> props = kafkaProperties.buildConsumerProperties();
-        return new DefaultKafkaConsumerFactory<>(props);
+        DefaultKafkaConsumerFactory<String, NotificationsRq> factory =
+                new DefaultKafkaConsumerFactory<>(props);
+
+        // Оборачиваем консьюмер в Brave tracing для извлечения контекста из заголовков Kafka
+        factory.addPostProcessor(consumer ->
+                KafkaTracing.create(tracing).consumer(consumer));
+
+        return factory;
     }
 
     /**
@@ -37,7 +49,8 @@ public class KafkaConfig {
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, NotificationsRq> batchKafkaListenerContainerFactory(
             ConsumerFactory<String, NotificationsRq> notificationConsumerFactory,
-            KafkaTemplate<String, NotificationsRq> kafkaTemplate) {
+            KafkaTemplate<String, NotificationsRq> kafkaTemplate,
+            ObservationRegistry observationRegistry) {
 
         ConcurrentKafkaListenerContainerFactory<String, NotificationsRq> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
@@ -45,6 +58,9 @@ public class KafkaConfig {
 
         factory.setBatchListener(true);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+
+        factory.getContainerProperties().setObservationEnabled(true);
+        factory.getContainerProperties().setObservationRegistry(observationRegistry);
 
         // DLQ: сбойная запись (индекс которой указан в BatchListenerFailedException) уходит в топики <topic>-dlt
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(

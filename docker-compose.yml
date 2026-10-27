@@ -24,7 +24,7 @@ services:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8090 && echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r' >&3 && cat <&3 | grep -q '200 OK'"]
       interval: 10s
       timeout: 5s
-      retries: 3
+      retries: 5
     networks:
       - bank-network
   postgres:
@@ -93,6 +93,7 @@ services:
       # Token endpoint — внутренний адрес (если сервис сам запрашивает токены)
       KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/token
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka1:29092,kafka2:29092,kafka3:29092
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     depends_on:
       keycloak:
         condition: service_healthy
@@ -118,6 +119,7 @@ services:
       KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/token
       TRANSFER_CLIENT_SECRET: transfer-secret
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka1:29092,kafka2:29092,kafka3:29092
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     depends_on:
       keycloak:
         condition: service_healthy
@@ -143,6 +145,7 @@ services:
       KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/token
       CASH_CLIENT_SECRET: cash-secret
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka1:29092,kafka2:29092,kafka3:29092
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     depends_on:
       keycloak:
         condition: service_healthy
@@ -170,6 +173,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka1:29092,kafka2:29092,kafka3:29092
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     depends_on:
       postgres:
         condition: service_healthy
@@ -194,6 +198,7 @@ services:
       DISCOVERY_SERVER_URI: http://eureka:8761/eureka/
       KEYCLOAK_ISSUER_URI: http://localhost:8090/realms/bank-realm
       KEYCLOAK_JWK_SET_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/certs
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
     depends_on:
       keycloak:
         condition: service_healthy
@@ -222,6 +227,7 @@ services:
       KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/token
       KEYCLOAK_JWK_SET_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/certs
       KEYCLOAK_USER_INFO_URI: http://keycloak:8090/realms/bank-realm/protocol/openid-connect/userinfo
+      ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
       UI_CLIENT: front-ui
     depends_on:
       keycloak:
@@ -235,6 +241,14 @@ services:
     networks:
       - bank-network
       - kafka-network
+  zipkin:
+    image: openzipkin/zipkin:3.6.1
+    container_name: bank-zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - bank-network
+
   #Кластер Apache Kafka из трех нод
   kafka1:
     image: apache/kafka:4.2.0
@@ -329,7 +343,6 @@ services:
       - kafka3-data:/var/lib/kafka/data
     networks:
       - kafka-network
-
 networks:
   bank-network:
     driver: bridge

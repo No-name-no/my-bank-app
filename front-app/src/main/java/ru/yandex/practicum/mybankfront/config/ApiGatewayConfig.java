@@ -1,5 +1,6 @@
 package ru.yandex.practicum.mybankfront.config;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
@@ -38,15 +39,15 @@ public class ApiGatewayConfig {
 
     @Bean
     @Primary
-    public RestClient.Builder regularRestClientBuilder() {
-        return RestClient.builder();
+    public RestClient.Builder regularRestClientBuilder(ObservationRegistry observationRegistry) {
+        return RestClient.builder().observationRegistry(observationRegistry);
     }
 
     @Bean
     @LoadBalanced
     @Scope("prototype")
-    public RestClient.Builder loadBalancedRestClientBuilder() {
-        return RestClient.builder();
+    public RestClient.Builder loadBalancedRestClientBuilder(ObservationRegistry observationRegistry) {
+        return RestClient.builder().observationRegistry(observationRegistry);
     }
 
     @Bean
