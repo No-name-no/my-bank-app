@@ -10,3 +10,8 @@ CREATE TABLE IF NOT EXISTS accounts.accounts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_accounts_login ON accounts(login);
+
+CREATE TABLE IF NOT EXISTS transactions (
+    id VARCHAR(128) PRIMARY KEY,
+    created_at     TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);

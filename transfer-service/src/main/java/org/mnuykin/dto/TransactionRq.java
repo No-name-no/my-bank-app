@@ -18,4 +18,5 @@ public class TransactionRq {
     @NotNull
     private String srcLogin;
     private String dstLogin;
+    private String transactionId;
 }

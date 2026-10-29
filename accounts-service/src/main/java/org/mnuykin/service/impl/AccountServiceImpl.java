@@ -6,11 +6,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mnuykin.dto.*;
 import org.mnuykin.entity.Account;
+import org.mnuykin.entity.Tran;
 import org.mnuykin.exception.AccountNotFoundException;
 import org.mnuykin.exception.InsufficientFundsException;
 import org.mnuykin.mapper.AccountMapper;
 import org.mnuykin.producer.NotificationProducer;
 import org.mnuykin.repository.AccountRepository;
+import org.mnuykin.repository.TranRepository;
 import org.mnuykin.service.AccountService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ public class AccountServiceImpl implements AccountService {
     private static final int MIN_AGE = 18;
 
     private final AccountRepository accountRepository;
+    private final TranRepository tranRepository;
     private final AccountMapper accountMapper;
     private final NotificationProducer notificationProducer;
     private final MeterRegistry meterRegistry;
@@ -84,6 +87,17 @@ public class AccountServiceImpl implements AccountService {
     @Override
     @Transactional
     public Mono<Void> execTran(TransactionRq transactionRq) {
+        validateAmount(transactionRq.getAmount());
+        validateTran(transactionRq.getTransactionId());
+
+        return tranRepository.existsById(transactionRq.getTransactionId())
+                .flatMap(exists -> exists
+                        ? Mono.empty()
+                        : tranRepository.save(new Tran(transactionRq.getTransactionId()))
+                          .flatMap(saved -> switchTran(transactionRq)));
+    }
+
+    private Mono<Void> switchTran(TransactionRq transactionRq){
         final TranKind kind = transactionRq.getKind();
         return switch (kind) {
             case CASH_WITHDRAWAL -> executeDecrement(transactionRq.getSrcLogin(), transactionRq.getAmount())
@@ -101,7 +115,7 @@ public class AccountServiceImpl implements AccountService {
                             .increment()
                     );
             case TRANSFER        -> executeTransfer(transactionRq.getSrcLogin(), transactionRq.getDstLogin(),
-                            transactionRq.getAmount())
+                    transactionRq.getAmount())
                     .doOnError(throwable -> Counter.builder("transfer.failures")
                             .description("Неуспешные попытки переводов")
                             .tag("srcLogin", transactionRq.getSrcLogin())
@@ -151,6 +165,21 @@ public class AccountServiceImpl implements AccountService {
     private void validateAge(LocalDate birthDate) {
         if (birthDate.isAfter(LocalDate.now().minusYears(MIN_AGE))) {
             throw new IllegalArgumentException("Возраст должен быть не менее " + MIN_AGE + " лет");
+        }
+    }
+
+    private void validateAmount(BigDecimal amount) {
+        if (amount == null) {
+            throw new IllegalArgumentException("Сумма обязательна");
+        }
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Сумма должна быть больше нуля");
+        }
+    }
+
+    private void validateTran(String tranId) {
+        if (tranId == null) {
+            throw new IllegalArgumentException("Ид. транзакции обязателен");
         }
     }
 }

@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +35,7 @@ public class CashServiceImpl implements CashService {
         log.info("Deposit requested: login={}, amount={}", login, amount);
 
         TransactionRq rq = new TransactionRq(
-                TranKind.CASH_DEPOSIT, amount, login, null);
+                TranKind.CASH_DEPOSIT, amount, login, null, UUID.randomUUID().toString());
 
         return accountsClient.transaction(rq)
                 .then(accountsClient.getAccount(login))
@@ -67,7 +68,7 @@ public class CashServiceImpl implements CashService {
         log.info("Withdraw requested: login={}, amount={}", login, amount);
 
         TransactionRq rq = new TransactionRq(
-                TranKind.CASH_WITHDRAWAL, amount, login, null);
+                TranKind.CASH_WITHDRAWAL, amount, login, null, UUID.randomUUID().toString());
 
         return accountsClient.transaction(rq)
                 .then(accountsClient.getAccount(login))

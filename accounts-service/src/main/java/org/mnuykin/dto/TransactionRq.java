@@ -1,8 +1,6 @@
 package org.mnuykin.dto;
 
-import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -15,11 +13,15 @@ import java.math.BigDecimal;
 public class TransactionRq {
     @NotNull
     private TranKind kind;
-    @NotNull
+    @NotNull(message = "Сумма обязательна")
+    @DecimalMin(value = "0.01", message = "Сумма должна быть больше нуля")
     private BigDecimal amount;
     @NotBlank
     private String srcLogin;
     private String dstLogin;
+    @Size(max = 128, message = "RE - Ид. не может быть больше 128 символов")
+    @NotBlank
+    private String transactionId;
 
     @AssertTrue(message = "dstLogin must be set for TRANSFER")
     private boolean isDstLoginValid() {

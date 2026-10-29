@@ -1,7 +1,5 @@
 package org.mnuykin.service.impl;
 
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mnuykin.dto.NotificationsRq;
@@ -16,6 +14,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -26,7 +25,6 @@ public class TransferServiceImpl implements TransferService {
 
     private final AccountsClient accountsClient;
     private final NotificationProducer notificationProducer;
-    private final MeterRegistry meterRegistry;
 
     @Override
     public Mono<TransferRs> transfer(String senderLogin, TransferRq rq) {
@@ -38,7 +36,7 @@ public class TransferServiceImpl implements TransferService {
         log.info("Transfer requested: {} -> {}, amount={}", senderLogin, recipientLogin, amount);
 
         TransactionRq transaction = new TransactionRq(
-                TranKind.TRANSFER, amount, senderLogin, recipientLogin);
+                TranKind.TRANSFER, amount, senderLogin, recipientLogin, UUID.randomUUID().toString());
 
         return accountsClient.transaction(transaction)
                 .then(accountsClient.getAccount(senderLogin))
@@ -53,11 +51,6 @@ public class TransferServiceImpl implements TransferService {
                                             "Не удалось отправить уведомление об обновлении профиля, login={}",
                                             recipientLogin, throwable
                                     );
-                                    Counter.builder("notification.failures")
-                                            .description("Невозможность отправки уведомления")
-                                            .tag("login", recipientLogin)
-                                            .register(meterRegistry)
-                                            .increment();
                                 }
                         ).onErrorResume(throwable -> Mono.empty())
                         .thenReturn(new TransferRs(

@@ -113,7 +113,7 @@ class MainControllerTest {
                     .andExpect(view().name("main"))
                     .andExpect(model().attribute("name", "Федя Сумкин"))
                     .andExpect(model().attribute("birthdate", "1990-01-01"))
-                    .andExpect(model().attribute("sum", 1000))
+                    .andExpect(model().attribute("sum", new BigDecimal("1000.00")))
                     .andExpect(model().attribute("accounts", List.of(
                             new AccountShortView("login2", "Пётр Петров"),
                             new AccountShortView("login3", "Дмитрий Петров"))));

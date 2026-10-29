@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 
 /**
  * Контроллер main.html.
- *
  * Используемая модель для main.html:
  *      model.addAttribute("name", name);
  *      model.addAttribute("birthdate", birthdate.format(DateTimeFormatter.ISO_DATE));
@@ -32,7 +31,6 @@ import java.util.regex.Pattern;
  *      model.addAttribute("accounts", accounts);
  *      model.addAttribute("errors", errors);
  *      model.addAttribute("info", info);
- *
  * Поля модели:
  *      name - Фамилия Имя текущего пользователя, String (обязательное)
  *      birthdate - дата рождения текущего пользователя, String в формате 'YYYY-MM-DD' (обязательное)
@@ -40,7 +38,6 @@ import java.util.regex.Pattern;
  *      accounts - список аккаунтов, которым можно перевести деньги, List<AccountDto> (обязательное)
  *      errors - список ошибок после выполнения действий, List<String> (не обязательное)
  *      info - строка успешности после выполнения действия, String (не обязательное)
- *
  * С примерами использования можно ознакомиться в тестовом классе заглушке AccountStub
  */
 @Controller
@@ -84,7 +81,6 @@ public class MainController {
      * 1. Сходить в сервис accounts через Gateway API для изменения данных текущего пользователя по REST
      * 2. Заполнить модель main.html полученными из ответа данными
      * 3. Текущего пользователя можно получить из контекста Security
-     *
      * Изменяемые данные:
      * 1. name - Фамилия Имя
      * 2. birthdate - дата рождения в формате YYYY-DD-MM
@@ -116,7 +112,6 @@ public class MainController {
      * 1. Сходить в сервис cash через Gateway API для снятия/пополнения счета текущего аккаунта по REST
      * 2. Заполнить модель main.html полученными из ответа данными
      * 3. Текущего пользователя можно получить из контекста Security
-     *
      * Параметры:
      * 1. value - сумма списания
      * 2. action - GET (снять), PUT (пополнить)
@@ -124,18 +119,17 @@ public class MainController {
     @PostMapping("/cash")
     public String editCash(
             Model model,
-            @RequestParam("value") int value,
+            @RequestParam("value") BigDecimal amount,
             @RequestParam("action") CashAction action
             ) {
-        BigDecimal amount = BigDecimal.valueOf(value);
         try {
             switch (action) {
                 case PUT -> cashClient.deposit(amount);
                 case GET -> cashClient.withdraw(amount);
             }
             model.addAttribute("info", switch (action) {
-                case PUT -> "Счёт пополнен на " + value + " руб.";
-                case GET -> "Со счёта снято " + value + " руб.";
+                case PUT -> "Счёт пополнен на " + amount + " руб.";
+                case GET -> "Со счёта снято " + amount + " руб.";
             });
         } catch (RestClientException e) {
             model.addAttribute("errors", List.of(extractError(e)));
@@ -151,7 +145,6 @@ public class MainController {
      * 1. Сходить в сервис accounts через Gateway API для перевода со счета текущего аккаунта на счет другого аккаунта по REST
      * 2. Заполнить модель main.html полученными из ответа данными
      * 3. Текущего пользователя можно получить из контекста Security
-     *
      * Параметры:
      * 1. value - сумма списания
      * 2. login - логин пользователя получателя
@@ -159,12 +152,11 @@ public class MainController {
     @PostMapping("/transfer")
     public String transfer(
             Model model,
-            @RequestParam("value") int value,
+            @RequestParam("value") BigDecimal value,
             @RequestParam("login") String login
     ) {
-        BigDecimal amount = BigDecimal.valueOf(value);
         try {
-            transferClient.transfer(login, amount);
+            transferClient.transfer(login, value);
             model.addAttribute("info",
                     "Перевод " + value + " руб. на счёт " + login + " выполнен");
         } catch (RestClientException e) {
@@ -188,7 +180,7 @@ public class MainController {
         model.addAttribute("birthdate", me.getBirthDate() != null
                 ? me.getBirthDate().toString() : "");
         model.addAttribute("sum", me.getBalance() != null
-                ? me.getBalance().intValue() : 0);
+                ? me.getBalance() : 0);
         model.addAttribute("accounts", others);
     }
 

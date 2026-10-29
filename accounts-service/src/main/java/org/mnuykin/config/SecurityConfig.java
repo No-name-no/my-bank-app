@@ -23,18 +23,15 @@ public class SecurityConfig {
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
-
                 .authorizeExchange(ex -> ex
                         .pathMatchers("/actuator/**").permitAll()
-                        .pathMatchers("/accounts/internal/**").hasRole("SERVICE")
+                        .pathMatchers("/internal/accounts/**").hasRole("SERVICE")
                         .pathMatchers(HttpMethod.GET, "/accounts/me").hasRole("USER")
                         .pathMatchers(HttpMethod.PUT, "/accounts/me").hasRole("USER")
                         .pathMatchers(HttpMethod.GET, "/accounts").hasRole("USER")
                         .anyExchange().authenticated())
-
                 .oauth2ResourceServer(o -> o
                         .jwt(j -> j.jwtAuthenticationConverter(jwtConverter)))
-
                 .build();
     }
 

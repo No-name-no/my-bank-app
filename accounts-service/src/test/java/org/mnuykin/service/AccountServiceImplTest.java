@@ -5,7 +5,9 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mnuykin.entity.Tran;
 import org.mnuykin.producer.NotificationProducer;
+import org.mnuykin.repository.TranRepository;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mnuykin.dto.AccountUpdateRq;
@@ -22,6 +24,7 @@ import reactor.test.StepVerifier;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -31,7 +34,10 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AccountServiceImplTest {
 
-    @Mock AccountRepository repository;
+    @Mock
+    AccountRepository repository;
+    @Mock
+    TranRepository tranRepository;
     @Mock AccountMapper mapper;
     @Mock NotificationProducer producer;
 
@@ -41,7 +47,7 @@ class AccountServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new AccountServiceImpl(repository, mapper, producer, registry);
+        service = new AccountServiceImpl(repository, tranRepository, mapper, producer, registry);
     }
 
     @Test
@@ -70,9 +76,13 @@ class AccountServiceImplTest {
     void deposit_shouldIncrement() {
         when(repository.incrementBalance("login1", new BigDecimal("100")))
                 .thenReturn(Mono.just(1));
+        when(tranRepository.save(any(Tran.class)))
+                .thenReturn(Mono.just(new Tran(UUID.randomUUID().toString())));
+        when(tranRepository.existsById(any(String.class)))
+                .thenReturn(Mono.just(false));
 
         StepVerifier.create(service.execTran(new TransactionRq(
-                        TranKind.CASH_DEPOSIT, new BigDecimal("100"), "login1", null)))
+                        TranKind.CASH_DEPOSIT, new BigDecimal("100"), "login1", null, UUID.randomUUID().toString())))
                 .verifyComplete();
     }
 
@@ -80,9 +90,13 @@ class AccountServiceImplTest {
     void deposit_shouldThrow_whenAccountNotFound() {
         when(repository.incrementBalance("ghost", new BigDecimal("100")))
                 .thenReturn(Mono.just(0));
+        when(tranRepository.save(any(Tran.class)))
+                .thenReturn(Mono.just(new Tran(UUID.randomUUID().toString())));
+        when(tranRepository.existsById(any(String.class)))
+                .thenReturn(Mono.just(false));
 
         StepVerifier.create(service.execTran(new TransactionRq(
-                        TranKind.CASH_DEPOSIT, new BigDecimal("100"), "ghost", null)))
+                        TranKind.CASH_DEPOSIT, new BigDecimal("100"), "ghost", null, UUID.randomUUID().toString())))
                 .expectError(AccountNotFoundException.class)
                 .verify();
     }
@@ -91,9 +105,13 @@ class AccountServiceImplTest {
     void withdraw_shouldDecrement_whenEnoughMoney() {
         when(repository.decrementBalance("login1", new BigDecimal("100")))
                 .thenReturn(Mono.just(1));
+        when(tranRepository.save(any(Tran.class)))
+                .thenReturn(Mono.just(new Tran(UUID.randomUUID().toString())));
+        when(tranRepository.existsById(any(String.class)))
+                .thenReturn(Mono.just(false));
 
         StepVerifier.create(service.execTran(new TransactionRq(
-                        TranKind.CASH_WITHDRAWAL, new BigDecimal("100"), "login1", null)))
+                        TranKind.CASH_WITHDRAWAL, new BigDecimal("100"), "login1", null, UUID.randomUUID().toString())))
                 .verifyComplete();
     }
 
@@ -103,9 +121,13 @@ class AccountServiceImplTest {
                 .thenReturn(Mono.just(0));
         when(repository.findByLogin("login1"))
                 .thenReturn(Mono.just(Account.builder().login("login1").build()));
+        when(tranRepository.save(any(Tran.class)))
+                .thenReturn(Mono.just(new Tran(UUID.randomUUID().toString())));
+        when(tranRepository.existsById(any(String.class)))
+                .thenReturn(Mono.just(false));
 
         StepVerifier.create(service.execTran(new TransactionRq(
-                        TranKind.CASH_WITHDRAWAL, new BigDecimal("99999"), "login1", null)))
+                        TranKind.CASH_WITHDRAWAL, new BigDecimal("99999"), "login1", null, UUID.randomUUID().toString())))
                 .expectError(InsufficientFundsException.class)
                 .verify();
     }
@@ -115,9 +137,13 @@ class AccountServiceImplTest {
         when(repository.decrementBalance("ghost", new BigDecimal("100")))
                 .thenReturn(Mono.just(0));
         when(repository.findByLogin("ghost")).thenReturn(Mono.empty());
+        when(tranRepository.save(any(Tran.class)))
+                .thenReturn(Mono.just(new Tran(UUID.randomUUID().toString())));
+        when(tranRepository.existsById(any(String.class)))
+                .thenReturn(Mono.just(false));
 
         StepVerifier.create(service.execTran(new TransactionRq(
-                        TranKind.CASH_WITHDRAWAL, new BigDecimal("100"), "ghost", null)))
+                        TranKind.CASH_WITHDRAWAL, new BigDecimal("100"), "ghost", null, UUID.randomUUID().toString())))
                 .expectError(AccountNotFoundException.class)
                 .verify();
     }
@@ -128,9 +154,13 @@ class AccountServiceImplTest {
                 .thenReturn(Mono.just(1));
         when(repository.incrementBalance("login2", new BigDecimal("100")))
                 .thenReturn(Mono.just(1));
+        when(tranRepository.save(any(Tran.class)))
+                .thenReturn(Mono.just(new Tran(UUID.randomUUID().toString())));
+        when(tranRepository.existsById(any(String.class)))
+                .thenReturn(Mono.just(false));
 
         StepVerifier.create(service.execTran(new TransactionRq(
-                        TranKind.TRANSFER, new BigDecimal("100"), "login1", "login2")))
+                        TranKind.TRANSFER, new BigDecimal("100"), "login1", "login2", UUID.randomUUID().toString())))
                 .verifyComplete();
 
         // Проверяем порядок: сначала decrement, потом increment
@@ -140,14 +170,51 @@ class AccountServiceImplTest {
     }
 
     @Test
+    void transfer_shouldDecrementThenIncrementAndCheckRetry() {
+        final String tranId = UUID.randomUUID().toString();
+        final Tran tran = new Tran(tranId);
+        when(repository.decrementBalance("login1", new BigDecimal("100")))
+                .thenReturn(Mono.just(1));
+        when(repository.incrementBalance("login2", new BigDecimal("100")))
+                .thenReturn(Mono.just(1));
+        when(tranRepository.save(any(Tran.class)))
+                .thenReturn(Mono.just(tran));
+        when(tranRepository.existsById(tranId))
+                .thenReturn(Mono.just(false),Mono.just(true));
+
+        StepVerifier.create(service.execTran(new TransactionRq(
+                        TranKind.TRANSFER, new BigDecimal("100"), "login1", "login2", tranId)))
+                .verifyComplete();
+
+        //Повтор
+        StepVerifier.create(service.execTran(new TransactionRq(
+                        TranKind.TRANSFER, new BigDecimal("100"), "login1", "login2", tranId)))
+                .verifyComplete();
+
+        var inOrder = inOrder(repository, tranRepository);
+        inOrder.verify(tranRepository).existsById(tranId);
+        inOrder.verify(tranRepository).save(any(Tran.class));
+        inOrder.verify(repository).decrementBalance("login1", new BigDecimal("100"));
+        inOrder.verify(repository).incrementBalance("login2", new BigDecimal("100"));
+        inOrder.verify(tranRepository).existsById(tranId);
+        inOrder.verifyNoMoreInteractions();
+
+        verify(tranRepository, times(1)).save(any(Tran.class));
+    }
+
+    @Test
     void transfer_shouldNotIncrement_whenDecrementFails() {
         when(repository.decrementBalance("login1", new BigDecimal("99999")))
                 .thenReturn(Mono.just(0));
         when(repository.findByLogin("login1"))
                 .thenReturn(Mono.just(Account.builder().login("login1").build()));
+        when(tranRepository.save(any(Tran.class)))
+                .thenReturn(Mono.just(new Tran(UUID.randomUUID().toString())));
+        when(tranRepository.existsById(any(String.class)))
+                .thenReturn(Mono.just(false));
 
         StepVerifier.create(service.execTran(new TransactionRq(
-                        TranKind.TRANSFER, new BigDecimal("99999"), "login1", "login2")))
+                        TranKind.TRANSFER, new BigDecimal("99999"), "login1", "login2", UUID.randomUUID().toString())))
                 .expectError(InsufficientFundsException.class)
                 .verify();
 
@@ -156,10 +223,37 @@ class AccountServiceImplTest {
 
     @Test
     void transfer_shouldRejectSelfTransfer() {
+        when(tranRepository.save(any(Tran.class)))
+                .thenReturn(Mono.just(new Tran(UUID.randomUUID().toString())));
+        when(tranRepository.existsById(any(String.class)))
+                .thenReturn(Mono.just(false));
+
         StepVerifier.create(service.execTran(new TransactionRq(
-                        TranKind.TRANSFER, new BigDecimal("100"), "login1", "login1")))
+                        TranKind.TRANSFER, new BigDecimal("100"), "login1", "login1", UUID.randomUUID().toString())))
                 .expectError(IllegalArgumentException.class)
                 .verify();
+
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void transfer_shouldRejectNonPositiveAmount() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.execTran(new TransactionRq(
+                        TranKind.TRANSFER, BigDecimal.valueOf(-1.0), "login1", "login1", UUID.randomUUID().toString()))
+        );
+
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void transfer_shouldRejectNonFoundTranId() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.execTran(new TransactionRq(
+                        TranKind.TRANSFER, BigDecimal.TEN.negate(), "login1", "login1", null))
+        );
 
         verifyNoInteractions(repository);
     }
