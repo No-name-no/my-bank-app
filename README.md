@@ -1,7 +1,7 @@
 # my-bank-app - микросервисное приложение
 Учебный проект: микросервисный «Банк» на Spring Boot/Java 21 со Spring Cloud, OAuth 2.0 (Keycloak), WebFlux и PostgreSQL.
 
-Взаимодействие внутренних сервисов с notifications-service осуществляется через Kafka - используется трех узловой кластер в docker.
+Взаимодействие внутренних сервисов с notifications-service осуществляется через Kafka - используется трех узловой кластер в локальном Kubernetes (kind + Strimzi) c helm.
 
 Приложение использует трейсинг Zipkin мониторинги/графики метрик и алерты с использованием Prometheus и Grafana, а так же логирование с использованием ELK-стека.
 
@@ -18,27 +18,27 @@
 | **keycloak**              | OAuth 2.0 / OIDC — realm `bank`                                                                |
 
 ## Порты
-| Порт | Приложение            |
-|------|-----------------------|
-| 8760 | Config Server         |
-| 8761 | Directory Server      |
-| 8080 | front-app             |
-| 8081 | gateway-api           |
-| 8082 | accounts-service      |
-| 8083 | cash-service          |
-| 8084 | transfer-service      |
-| 8089 | notifications-service |
-| 8090 | keycloak              |
-| 8091 | PostgreSQL            |
-| 9092 | Kafka   1             |
-| 9094 | Kafka   2             |
-| 9096 | Kafka   3             |
-| 9411 | Zipkin                |
-| 9412 | Prometheus            |
-| 9413 | Grafana               |
-| 9414 | Elasticsearch         |
-| 9415 | Kibana                |
-| 5000 | Logstas               |
+| Порт  | Приложение            |
+|-------|-----------------------|
+| 8760  | Config Server         |
+| 8761  | Directory Server      |
+| 8080  | front-app             |
+| 8081  | gateway-api           |
+| 8082  | accounts-service      |
+| 8083  | cash-service          |
+| 8084  | transfer-service      |
+| 8089  | notifications-service |
+| 8090  | keycloak              |
+| 8091  | PostgreSQL            |
+| 31090 | Kafka   1             |
+| 31091 | Kafka   2             |
+| 31092 | Kafka   3             |
+| 9411  | Zipkin                |
+| 9412  | Prometheus            |
+| 9413  | Grafana               |
+| 9414  | Elasticsearch         |
+| 9415  | Kibana                |
+| 5000  | Logstas               |
 ---
 
 ## Запуск
@@ -49,13 +49,35 @@
 - Maven
 - Docker + Docker Compose
 - Импортированный realm `bank` в Keycloak
+- Kind (https://kind.sigs.k8s.io/docs/user/quick-start/)
+- Helm (https://helm.sh/ru/docs/v3/intro/install/)
 
 ###  Docker Compose
 
 Dockerfile'ы используют уже собранные JAR-артефакты из `target/`, поэтому перед `docker compose` необходимо собрать модули Maven'ом:
 
 ```bash
+# 0. Сборка
 mvn clean package -DskipTests
+
+# 1. Создать кластер kind
+kind create cluster --config k8s/kind-config.yaml --name bank-kafka
+
+# 2. Установить CRD
+helm pull oci://quay.io/strimzi-helm/strimzi-kafka-operator --version 1.3.0 --untar
+kubectl apply --server-side --filename ./strimzi-kafka-operator/crds --recursive
+
+# 3. Установить strimzi-operator
+helm upgrade --install strimzi-operator oci://quay.io/strimzi-helm/strimzi-kafka-operator `
+  --version 1.3.0 --namespace kafka --create-namespace --wait --timeout 10m
+  
+# 4. Применить Kafka-кластер
+kubectl apply -f k8s/strimzi/
+
+# 5. Дождаться готовности
+kubectl wait kafka/bank-kafka -n kafka --for=condition=Ready --timeout=10m
+
+# 6. Запуск компонентов приложения
 docker compose up --build
 ```
 
