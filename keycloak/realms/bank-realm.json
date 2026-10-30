@@ -16,7 +16,7 @@
   "rememberMe": false,
   "verifyEmail": false,
   "bruteForceProtected": true,
-  "sslRequired": "external",
+  "sslRequired": "NONE",
 
   "roles": {
     "realm": [

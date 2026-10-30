@@ -1,8 +1,10 @@
 package org.mnuykin;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mnuykin.producer.NotificationProducer;
+import org.mnuykin.repository.OutboxRepository;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -12,6 +14,7 @@ import org.mnuykin.dto.TranKind;
 import org.mnuykin.dto.TransactionRq;
 import org.mnuykin.service.AccountsClient;
 import org.mnuykin.service.impl.CashServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -30,6 +33,10 @@ class CashServiceImplTest {
     @Mock
     NotificationProducer notificationClient;
     @InjectMocks CashServiceImpl service;
+    @Mock
+    OutboxRepository outboxRepository;
+    @Mock
+    ObjectMapper objectMapper;
 
     @Test
     void deposit_happyPath() {
@@ -37,7 +44,6 @@ class CashServiceImplTest {
         when(accountsClient.getAccount("login1")).thenReturn(Mono.just(
                 new AccountDto("login1", "Федя", "Сумкин",
                         LocalDate.of(1990, 1, 1), new BigDecimal("1100.00"))));
-        when(notificationClient.send(any())).thenReturn(Mono.empty());
 
         StepVerifier.create(service.deposit("login1", new BigDecimal("100.00")))
                 .assertNext(r -> {
@@ -54,8 +60,6 @@ class CashServiceImplTest {
         assertThat(sent.getSrcLogin()).isEqualTo("login1");
         assertThat(sent.getDstLogin()).isNull();
         assertThat(sent.getAmount()).isEqualByComparingTo("100.00");
-
-        verify(notificationClient).send(any());
     }
 
     @Test
@@ -64,7 +68,6 @@ class CashServiceImplTest {
         when(accountsClient.getAccount("login1")).thenReturn(Mono.just(
                 new AccountDto("login1", "Федя", "Сумкин",
                         LocalDate.of(1990, 1, 1), new BigDecimal("900.00"))));
-        when(notificationClient.send(any())).thenReturn(Mono.empty());
 
         StepVerifier.create(service.withdraw("login1", new BigDecimal("100.00")))
                 .assertNext(r -> {

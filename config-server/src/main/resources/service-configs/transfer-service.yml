@@ -5,6 +5,21 @@ spring:
   application:
     name: transfer-service
 
+  r2dbc:
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:8091}/${DB_NAME:bank}?currentSchema=transfer
+    username: ${DB_USERNAME:bank}
+    password: ${DB_PASSWORD:bank}
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+      max-idle-time: 30m
+      validation-query: SELECT 1
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092,localhost:9094,localhost:9096}
     producer:

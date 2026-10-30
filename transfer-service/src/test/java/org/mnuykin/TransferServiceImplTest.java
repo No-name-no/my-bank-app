@@ -1,8 +1,10 @@
 package org.mnuykin;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mnuykin.producer.NotificationProducer;
+import org.mnuykin.repository.OutboxRepository;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -28,9 +30,11 @@ import static org.mockito.Mockito.*;
 class TransferServiceImplTest {
 
     @Mock AccountsClient accountsClient;
-    @Mock
-    NotificationProducer notificationClient;
     @InjectMocks TransferServiceImpl service;
+    @Mock
+    OutboxRepository outboxRepository;
+    @Mock
+    ObjectMapper objectMapper;
 
     @Test
     void transfer_happyPath() {
@@ -38,7 +42,6 @@ class TransferServiceImplTest {
         when(accountsClient.getAccount("login1")).thenReturn(Mono.just(
                 new AccountDto("login1", "Федя", "Сумкин",
                         LocalDate.of(1990, 1, 1), new BigDecimal("900.00"))));
-        when(notificationClient.send(any())).thenReturn(Mono.empty());
 
         StepVerifier.create(service.transfer("login1",
                         new TransferRq("login2", new BigDecimal("100"))))
@@ -58,8 +61,6 @@ class TransferServiceImplTest {
         assertThat(sent.getSrcLogin()).isEqualTo("login1");
         assertThat(sent.getDstLogin()).isEqualTo("login2");
         assertThat(sent.getAmount()).isEqualByComparingTo("100");
-
-        verify(notificationClient).send(any());
     }
 
     @Test
@@ -71,7 +72,7 @@ class TransferServiceImplTest {
                 )
         );
 
-        verifyNoInteractions(accountsClient, notificationClient);
+        verifyNoInteractions(accountsClient);
     }
 
     @Test
@@ -83,6 +84,6 @@ class TransferServiceImplTest {
                 )
         );
 
-        verifyNoInteractions(accountsClient, notificationClient);
+        verifyNoInteractions(accountsClient);
     }
 }

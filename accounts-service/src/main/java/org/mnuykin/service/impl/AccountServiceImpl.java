@@ -1,17 +1,21 @@
 package org.mnuykin.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.r2dbc.postgresql.codec.Json;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mnuykin.dto.*;
 import org.mnuykin.entity.Account;
+import org.mnuykin.entity.OutboxEvent;
 import org.mnuykin.entity.Tran;
 import org.mnuykin.exception.AccountNotFoundException;
 import org.mnuykin.exception.InsufficientFundsException;
 import org.mnuykin.mapper.AccountMapper;
 import org.mnuykin.producer.NotificationProducer;
 import org.mnuykin.repository.AccountRepository;
+import org.mnuykin.repository.OutboxRepository;
 import org.mnuykin.repository.TranRepository;
 import org.mnuykin.service.AccountService;
 import org.springframework.stereotype.Service;
@@ -21,6 +25,7 @@ import reactor.core.publisher.Mono;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -31,9 +36,9 @@ public class AccountServiceImpl implements AccountService {
     private final AccountRepository accountRepository;
     private final TranRepository tranRepository;
     private final AccountMapper accountMapper;
-    private final NotificationProducer notificationProducer;
+    private final OutboxRepository outboxRepository;
+    private final ObjectMapper objectMapper;
     private final MeterRegistry meterRegistry;
-
     @Override
     public Mono<AccountDto> getByLogin(String login) {
         return findByLoginOrThrow(login).map(accountMapper::toDto);
@@ -49,7 +54,7 @@ public class AccountServiceImpl implements AccountService {
                         updateRq.getFirstName(),
                         updateRq.getLastName(),
                         updateRq.getBirthday())
-                .flatMap(updated -> {
+                        .flatMap(updated -> {
                     if (updated == 0) {
                         return Mono.error(new AccountNotFoundException("Аккаунт не найден: " + login));
                     }
@@ -57,26 +62,27 @@ public class AccountServiceImpl implements AccountService {
                     account.setLastName(updateRq.getLastName());
                     account.setBirthDate(updateRq.getBirthday());
                     return Mono.just(account);
-                })
-        ).flatMap(account -> notificationProducer
-                .send(new NotificationsRq(
-                        account.getLogin(),
-                        "Профиль обновлён",
-                        "Данные аккаунта изменены: " + account.getFirstName() + " " + account.getLastName())
-                ).doOnError(throwable -> {
-                            log.warn(
-                                    "Не удалось отправить уведомление об обновлении профиля, login={}",
-                                    account.getLogin(), throwable
-                            );
-                            Counter.builder("notification.failures")
-                                    .description("Невозможность отправки уведомления")
-                                    .tag("login", login)
-                                    .register(meterRegistry)
-                                    .increment();
-                        }
-                ).onErrorResume(throwable -> Mono.empty())
-                .thenReturn(account)
-        ).map(accountMapper::toDto);
+                }))
+                .flatMap(account -> saveNotificationToOutbox(
+                        new NotificationsRq(
+                                account.getLogin(),
+                                "Профиль обновлён",
+                                "Данные аккаунта изменены: " + account.getFirstName() + " " + account.getLastName()
+                        ), login
+                ).thenReturn(account)).map(accountMapper::toDto);
+    }
+
+    private Mono<Void> saveNotificationToOutbox(NotificationsRq rq, String login) {
+        return Mono.fromCallable(() -> objectMapper.writeValueAsBytes(rq))
+                .map(Json::of)
+                .flatMap(json -> {
+                    OutboxEvent event = new OutboxEvent();
+                    event.setLogin(login);
+                    event.setPayload(json);
+                    event.setStatus(OutboxStatus.PENDING);
+                    event.setUpdateAt(OffsetDateTime.now());
+                    return outboxRepository.save(event);
+                }).then();
     }
 
     @Override

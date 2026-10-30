@@ -122,6 +122,8 @@ services:
       TRANSFER_CLIENT_SECRET: transfer-secret
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka1:29092,kafka2:29092,kafka3:29092
       ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
+      DB_HOST: postgres
+      DB_PORT: 5432
     depends_on:
       keycloak:
         condition: service_healthy
@@ -148,6 +150,8 @@ services:
       CASH_CLIENT_SECRET: cash-secret
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka1:29092,kafka2:29092,kafka3:29092
       ZIPKIN_ENDPOINT: http://zipkin:9411/api/v2/spans
+      DB_HOST: postgres
+      DB_PORT: 5432
     depends_on:
       keycloak:
         condition: service_healthy

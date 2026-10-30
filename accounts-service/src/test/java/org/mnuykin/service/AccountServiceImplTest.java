@@ -1,5 +1,6 @@
 package org.mnuykin.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mnuykin.entity.Tran;
 import org.mnuykin.producer.NotificationProducer;
+import org.mnuykin.repository.OutboxRepository;
 import org.mnuykin.repository.TranRepository;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -19,6 +21,7 @@ import org.mnuykin.exception.InsufficientFundsException;
 import org.mnuykin.mapper.AccountMapper;
 import org.mnuykin.repository.AccountRepository;
 import org.mnuykin.service.impl.AccountServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -40,6 +43,10 @@ class AccountServiceImplTest {
     TranRepository tranRepository;
     @Mock AccountMapper mapper;
     @Mock NotificationProducer producer;
+    @Mock
+    OutboxRepository outboxRepository;
+    @Autowired
+    ObjectMapper objectMapper;
 
     private final MeterRegistry registry = new SimpleMeterRegistry();
 
@@ -47,7 +54,7 @@ class AccountServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new AccountServiceImpl(repository, tranRepository, mapper, producer, registry);
+        service = new AccountServiceImpl(repository, tranRepository, mapper, outboxRepository, objectMapper, registry);
     }
 
     @Test
