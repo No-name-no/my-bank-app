@@ -13,7 +13,6 @@ import org.mnuykin.entity.Tran;
 import org.mnuykin.exception.AccountNotFoundException;
 import org.mnuykin.exception.InsufficientFundsException;
 import org.mnuykin.mapper.AccountMapper;
-import org.mnuykin.producer.NotificationProducer;
 import org.mnuykin.repository.AccountRepository;
 import org.mnuykin.repository.OutboxRepository;
 import org.mnuykin.repository.TranRepository;

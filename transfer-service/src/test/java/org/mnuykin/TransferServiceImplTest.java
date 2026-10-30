@@ -3,7 +3,6 @@ package org.mnuykin;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mnuykin.producer.NotificationProducer;
 import org.mnuykin.repository.OutboxRepository;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;

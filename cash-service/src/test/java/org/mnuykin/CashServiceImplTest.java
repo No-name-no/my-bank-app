@@ -14,7 +14,6 @@ import org.mnuykin.dto.TranKind;
 import org.mnuykin.dto.TransactionRq;
 import org.mnuykin.service.AccountsClient;
 import org.mnuykin.service.impl.CashServiceImpl;
-import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 

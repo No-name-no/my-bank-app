@@ -1,14 +1,11 @@
 package org.mnuykin.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.micrometer.core.instrument.Counter;
-import io.micrometer.core.instrument.MeterRegistry;
 import io.r2dbc.postgresql.codec.Json;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.mnuykin.dto.*;
 import org.mnuykin.entity.OutboxEvent;
-import org.mnuykin.producer.NotificationProducer;
 import org.mnuykin.service.AccountsClient;
 import org.mnuykin.service.CashService;
 import org.springframework.stereotype.Service;
@@ -27,8 +24,6 @@ public class CashServiceImpl implements CashService {
     private static final String OPERATION_WITHDRAW = "WITHDRAW";
 
     private final AccountsClient accountsClient;
-    private final NotificationProducer notificationProducer;
-    private final MeterRegistry meterRegistry;
 
     private final ObjectMapper objectMapper;
 

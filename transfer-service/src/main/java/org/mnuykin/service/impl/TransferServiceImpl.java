@@ -24,7 +24,6 @@ public class TransferServiceImpl implements TransferService {
     private static final String OPERATION_TRANSFER = "TRANSFER";
 
     private final AccountsClient accountsClient;
-    private final NotificationProducer notificationProducer;
 
     private final ObjectMapper objectMapper;
 
