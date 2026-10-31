@@ -15,7 +15,8 @@ Contract.make {
         body(
                 kind: "CASH_WITHDRAWAL",
                 amount: 99999.00,
-                srcLogin: "login1"
+                srcLogin: "login1",
+                transactionId: "a8e99587-0e81-4b74-8d18-2ba6791d9d1b"
         )
     }
 
@@ -25,7 +26,7 @@ Contract.make {
             contentType(applicationJson())
         }
         body(
-                error: "Недостаточно средств на счёте login1"
+                "code":"InsufficientFunds","message":"Недостаточно средств на счёте login1"
         )
     }
 }

@@ -26,7 +26,8 @@ import static org.springframework.security.test.web.reactive.server.SecurityMock
 @WebFluxTest(controllers = TransferController.class)
 @Import({SecurityConfig.class, GlobalExceptionHandler.class})
 @TestPropertySource(properties = {
-        "spring.cloud.config.enabled=false"
+        "spring.cloud.config.enabled=false",
+        "logging.config=classpath:logback-test.xml"
 })
 class TransferControllerTest {
 

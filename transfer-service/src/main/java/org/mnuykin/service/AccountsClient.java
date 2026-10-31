@@ -2,6 +2,7 @@ package org.mnuykin.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.mnuykin.dto.AccountDto;
+import org.mnuykin.dto.ErrorRs;
 import org.mnuykin.dto.TransactionRq;
 import org.mnuykin.exception.AccountNotFoundException;
 import org.mnuykin.exception.DownstreamServiceException;
@@ -24,6 +25,12 @@ public class AccountsClient {
 
     private final WebClient webClient;
 
+    private static final String CODE_ACCOUNT_NOT_FOUND   = "AccountNotFound";
+    private static final String CODE_INSUFFICIENT_FUNDS  = "InsufficientFunds";
+    private static final String CODE_VALIDATION          = "Validation";
+    private static final String CODE_ILLEGAL_ARGUMENT    = "IllegalArgument";
+    private static final String CODE_UNKNOWN             = "Unknown";
+
     public AccountsClient(@Qualifier("accountsWebClient") WebClient webClient) {
         this.webClient = webClient;
     }
@@ -34,15 +41,9 @@ public class AccountsClient {
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(rq)
                 .retrieve()
-                .onStatus(s -> s.value() == 404, resp ->
-                        Mono.error(new AccountNotFoundException(
-                                "Аккаунт не найден: " + rq.getSrcLogin()
-                                        + (rq.getDstLogin() != null ? " или " + rq.getDstLogin() : ""))))
-                .onStatus(s -> s.value() == 400, resp ->
-                        Mono.error(new InsufficientFundsException(
-                                "Недостаточно средств на счёте " + rq.getSrcLogin())))
-                .onStatus(HttpStatusCode::isError, this::mapError)
-                .bodyToMono(Void.class)
+                .onStatus(HttpStatusCode::isError, clientResponse -> mapError(clientResponse,
+                        rq.getSrcLogin() + (rq.getDstLogin() != null ? " или " + rq.getDstLogin() : ""))
+                ).bodyToMono(Void.class)
                 .timeout(TIMEOUT)
                 .doOnError(e -> log.warn("transaction {} failed: {}",
                         rq.getKind(), e.getMessage()));
@@ -53,18 +54,45 @@ public class AccountsClient {
                 .uri("/internal/accounts/{login}", login)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .onStatus(s -> s.value() == 404, resp ->
-                        Mono.error(new AccountNotFoundException("Аккаунт не найден: " + login)))
-                .onStatus(HttpStatusCode::isError, this::mapError)
+                .onStatus(HttpStatusCode::isError, clientResponse -> mapError(clientResponse, login))
                 .bodyToMono(AccountDto.class)
                 .timeout(TIMEOUT)
                 .doOnError(e -> log.warn("getAccount({}) failed: {}", login, e.getMessage()));
     }
 
-    private Mono<? extends Throwable> mapError(ClientResponse resp) {
-        return resp.bodyToMono(String.class)
-                .defaultIfEmpty("")
-                .map(body -> new DownstreamServiceException(
-                        "accounts-service " + resp.statusCode() + ": " + body));
+    private Mono<? extends Throwable> mapError(ClientResponse resp, String contextLogin) {
+        return resp.bodyToMono(ErrorRs.class)
+                .onErrorResume(ex -> {
+                    log.warn("Failed to parse ErrorRs from accounts-service ({}): {}",
+                            resp.statusCode().value(), ex.getMessage());
+                    return Mono.empty();
+                })
+                .defaultIfEmpty(new ErrorRs(CODE_UNKNOWN, null))
+                .map(rs -> mapError(rs, resp.statusCode(), contextLogin));
+    }
+
+    private Throwable mapError(ErrorRs rs, HttpStatusCode status, String loginForContext) {
+        final String code = rs.getCode();
+        final String msg  = rs.getMessage();
+
+        if (code != null) {
+            return switch (code) {
+                case CODE_ACCOUNT_NOT_FOUND -> new AccountNotFoundException(orDefault(msg,
+                        "Аккаунт не найден: " + loginForContext));
+                case CODE_INSUFFICIENT_FUNDS -> new InsufficientFundsException(orDefault(msg,
+                        "Недостаточно средств на счёте " + loginForContext));
+                case CODE_VALIDATION, CODE_ILLEGAL_ARGUMENT ->
+                        new IllegalArgumentException("accounts-service rejected request: " + orDefault(msg, code));
+                default -> new DownstreamServiceException("accounts-service [" + code + "] " + status.value()
+                        + (msg != null ? ": " + msg : ""));
+            };
+        }
+
+        return new DownstreamServiceException(
+                "accounts-service returned " + status.value());
+    }
+
+    private static String orDefault(String value, String fallback) {
+        return (value != null && !value.isBlank()) ? value : fallback;
     }
 }

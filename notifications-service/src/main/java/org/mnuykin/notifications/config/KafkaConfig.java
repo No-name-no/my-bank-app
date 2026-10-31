@@ -1,8 +1,11 @@
 package org.mnuykin.notifications.config;
 
+import brave.Tracing;
+import brave.kafka.clients.KafkaTracing;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.TopicPartition;
 import org.mnuykin.notifications.dto.NotificationsRq;
+import org.mnuykin.notifications.exception.InvalidNotificationException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -10,7 +13,6 @@ import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.listener.BatchListenerFailedException;
 import org.springframework.kafka.listener.ContainerProperties;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
@@ -23,12 +25,21 @@ import java.util.Map;
 public class KafkaConfig {
     /**
      * ConsumerFactory собирается из application.properties через KafkaProperties.
+     * Добавлено оборачивание в KafkaTracing для корректной трассировки входящих сообщений.
      */
     @Bean
     public ConsumerFactory<String, NotificationsRq> notificationConsumerFactory(
-            org.springframework.boot.kafka.autoconfigure.KafkaProperties kafkaProperties) {
+            org.springframework.boot.kafka.autoconfigure.KafkaProperties kafkaProperties,
+            Tracing tracing) { // Внедряем Brave Tracing
         Map<String, Object> props = kafkaProperties.buildConsumerProperties();
-        return new DefaultKafkaConsumerFactory<>(props);
+        DefaultKafkaConsumerFactory<String, NotificationsRq> factory =
+                new DefaultKafkaConsumerFactory<>(props);
+
+        // Оборачиваем консьюмер в Brave tracing для извлечения контекста из заголовков Kafka
+        factory.addPostProcessor(consumer ->
+                KafkaTracing.create(tracing).consumer(consumer));
+
+        return factory;
     }
 
     /**
@@ -37,7 +48,7 @@ public class KafkaConfig {
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, NotificationsRq> batchKafkaListenerContainerFactory(
             ConsumerFactory<String, NotificationsRq> notificationConsumerFactory,
-            KafkaTemplate<String, NotificationsRq> kafkaTemplate) {
+            KafkaTemplate<String, NotificationsRq> kafkaTemplate){
 
         ConcurrentKafkaListenerContainerFactory<String, NotificationsRq> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
@@ -57,7 +68,7 @@ public class KafkaConfig {
         // Ошибки десериализации и валидации сразу в DLQ
         errorHandler.addNotRetryableExceptions(
                 DeserializationException.class,
-                BatchListenerFailedException.class
+                InvalidNotificationException.class
         );
 
         factory.setCommonErrorHandler(errorHandler);

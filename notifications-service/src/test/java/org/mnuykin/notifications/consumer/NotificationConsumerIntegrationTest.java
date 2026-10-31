@@ -13,6 +13,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mnuykin.notifications.dto.NotificationsRq;
+import org.mnuykin.notifications.exception.InvalidNotificationException;
 import org.mnuykin.notifications.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,7 +41,8 @@ import static org.mockito.Mockito.*;
         "spring.cloud.config.enabled=false",
         "spring.cloud.config.fail-fast=false",
         "eureka.client.enabled=false",
-        "spring.cloud.discovery.enabled=false"
+        "spring.cloud.discovery.enabled=false",
+        "logging.config=classpath:logback-test.xml",
 })
 @EmbeddedKafka(
         partitions = 3,
@@ -141,7 +143,7 @@ class NotificationConsumerIntegrationTest {
         NotificationsRq rq = new NotificationsRq("user-fail", "subj", "msg");
         String key = "fail-" + UUID.randomUUID();
 
-        doThrow(new IllegalStateException("boom"))
+        doThrow(new InvalidNotificationException("boom"))
                 .when(notificationService).send(any());
 
         kafkaTemplate.send("transfer-service", key, rq).get(10, TimeUnit.SECONDS);

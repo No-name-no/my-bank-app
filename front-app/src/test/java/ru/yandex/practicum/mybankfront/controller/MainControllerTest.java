@@ -52,7 +52,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.security.oauth2.client.provider.keycloak.token-uri=http://localhost:8090/token",
         "spring.security.oauth2.client.provider.keycloak.jwk-set-uri=http://localhost:8090/certs",
         "spring.security.oauth2.client.provider.keycloak.user-info-uri=http://localhost:8090/userinfo",
-        "spring.security.oauth2.client.provider.keycloak.user-name-attribute=preferred_username"
+        "spring.security.oauth2.client.provider.keycloak.user-name-attribute=preferred_username",
+        "logging.config=classpath:logback-test.xml",
 })
 class MainControllerTest {
 
@@ -112,7 +113,7 @@ class MainControllerTest {
                     .andExpect(view().name("main"))
                     .andExpect(model().attribute("name", "Федя Сумкин"))
                     .andExpect(model().attribute("birthdate", "1990-01-01"))
-                    .andExpect(model().attribute("sum", 1000))
+                    .andExpect(model().attribute("sum", new BigDecimal("1000.00")))
                     .andExpect(model().attribute("accounts", List.of(
                             new AccountShortView("login2", "Пётр Петров"),
                             new AccountShortView("login3", "Дмитрий Петров"))));

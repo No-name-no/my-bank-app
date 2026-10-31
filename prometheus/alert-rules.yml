@@ -1,0 +1,39 @@
+groups:
+  - name: bank-alerts
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+          /
+          sum(rate(http_server_requests_seconds_count[5m]))
+          > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Высокая доля 5xx ошибок"
+          description: "Доля 5xx превышает 5% в течение 2 минут"
+
+      - alert: HighWithdrawFailureRate
+        expr: rate(withdraw_failures_total[5m]) > 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Много неуспешных снятий ({{ $labels.login }})"
+
+      - alert: HighTransferFailureRate
+        expr: rate(transfer_failures_total[5m]) > 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Много неуспешных переводов ({{ $labels.srcLogin }} → {{ $labels.dstLogin }})"
+
+      - alert: HighNotificationFailureRate
+        expr: rate(notification_failures_total[5m]) > 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Не уходят уведомления ({{ $labels.login }})"

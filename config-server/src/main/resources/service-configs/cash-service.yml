@@ -4,6 +4,20 @@ server:
 spring:
   application:
     name: cash-service
+  r2dbc:
+    url: r2dbc:postgresql://${DB_HOST:localhost}:${DB_PORT:8091}/${DB_NAME:bank}?currentSchema=cash
+    username: ${DB_USERNAME:bank}
+    password: ${DB_PASSWORD:bank}
+    pool:
+      enabled: true
+      initial-size: 5
+      max-size: 20
+      max-idle-time: 30m
+      validation-query: SELECT 1
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092,localhost:9094,localhost:9096}
     producer:
@@ -23,6 +37,10 @@ spring:
     admin:
       client-id: cash-service
       fail-fast: false
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
 
   security:
     oauth2:
@@ -45,7 +63,6 @@ spring:
             client-id: cash-service
             client-secret: ${CASH_CLIENT_SECRET:cash-secret}
             authorization-grant-type: client_credentials
-
 bank:
   accounts-service:
     base-url: http://accounts-service

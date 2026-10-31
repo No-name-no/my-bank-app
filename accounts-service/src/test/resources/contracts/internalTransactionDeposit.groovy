@@ -15,7 +15,8 @@ Contract.make {
         body(
                 kind: "CASH_DEPOSIT",
                 amount: 100.00,
-                srcLogin: "login1"
+                srcLogin: "login1",
+                transactionId: "a8e99587-0e81-4b74-8d18-2ba6791d9d1b"
         )
     }
 

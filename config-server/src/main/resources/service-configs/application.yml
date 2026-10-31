@@ -1,4 +1,7 @@
 #Общий файл конфигурации
+spring:
+  reactor:
+    context-propagation: auto
 
 eureka:
   client:
@@ -7,9 +10,31 @@ eureka:
   instance:
     prefer-ip-address: true
 
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      enabled: true
+      zipkin:
+        endpoint: ${ZIPKIN_ENDPOINT:http://zipkin:9411/api/v2/spans}
+    propagation:
+      type: b3
+
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
 logging:
   level:
     org.mnuykin: DEBUG
-    org.springframework.security.oauth2.client: INFO
-    org.springframework.security.oauth2: INFO
-    reactor.netty.http.client: DEBUG

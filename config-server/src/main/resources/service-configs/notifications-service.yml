@@ -24,3 +24,7 @@ spring:
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     admin:
       fail-fast: false
+    template:
+      observation-enabled: true
+    listener:
+      observation-enabled: true
